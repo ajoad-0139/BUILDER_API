@@ -54,7 +54,11 @@ class ThemeService :
             body=body, css_file=css_file, js_file=js_file, created_by=created_by
         )
         
-        theme.save()
+        try:
+            theme.save()
+        except Exception:
+            StorageCleaner.delete_written_files(theme)
+            raise
 
         return theme
 
@@ -276,7 +280,6 @@ class ThemeImageService :
         return theme.image_assets.order_by("-created_at")
         
     @classmethod
-    @transaction.atomic
     def create(cls, *, theme_id, user, files, alt_text: str = "") -> "list[Image]":
         """Create multiple image assets for a theme.
 
@@ -299,15 +302,6 @@ class ThemeImageService :
 
         if not (user.is_staff or theme.created_by_id == user.id):
             raise PermissionDenied("You can't add images to this theme.")
-
-        # images = []
-        # try:
-        #     for file in files:
-        #         images.append(Image.objects.create(theme=theme, file=file, alt_text=alt_text))
-        # except Exception:
-        #     for image in images:
-        #         image.file.storage.delete(image.file.name)
-        #     raise
 
         images = [Image(theme=theme, file=file, alt_text=alt_text) for file in files]
 
@@ -478,7 +472,6 @@ class ThemeVideoService:
         return theme.video_assets.order_by("-created_at")
 
     @classmethod
-    @transaction.atomic
     def create(cls, *, theme_id, user, files) -> "list[Video]":
         """Create multiple video assets for a theme.
 
@@ -501,17 +494,12 @@ class ThemeVideoService:
         if not (user.is_staff or theme.created_by_id == user.id):
             raise PermissionDenied("You can't add videos to this theme.")
 
-        videos = []
-        try:
-            for file in files:
-                title = os.path.splitext(file.name)[0][:255]
-                videos.append(Video.objects.create(theme=theme, file=file, title=title))
-        except Exception:
-            # rows roll back, but files already written would be orphaned
-            for video in videos:
-                video.file.storage.delete(video.file.name)
-            raise
-
+        videos = [
+            Video(theme=theme, file=file, title=os.path.splitext(file.name)[0][:255])
+            for file in files
+        ]
+        ledger = store_files(videos)
+        save_rows(videos, ledger)
         return videos
 
 

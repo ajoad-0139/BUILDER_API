@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils.text import slugify
 from sites.utils.storage import StorageCleaner
 from sites.models import Site, Image, Video
+from sites.utils.storage import save_rows, store_files
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from sites.exceptions import ThemeIncomplete, SiteNotFound, ImageNotFound, VideoNotFound
 
@@ -40,7 +41,6 @@ class SiteService:
         return sites.order_by("-created_at")
 
     @classmethod
-    @transaction.atomic
     def create(cls, *, created_by, theme, name: str, language: str = "en", description: str = "",
         published_domain=None, favicon=None, meta_description: str = "", og_image=None, no_index: bool = False) -> Site:
         """Create a site using the selected theme's files.
@@ -81,7 +81,12 @@ class SiteService:
             body=cls._copy_file(theme.body),css_file=cls._copy_file(theme.css_file),
             js_file=cls._copy_file(theme.js_file),
         )
-        site.save()
+        try:
+            site.save()
+        except Exception:
+            StorageCleaner.delete_written_files(site)
+            raise
+
         return site
 
     @staticmethod
@@ -312,7 +317,6 @@ class SiteImageService:
 
 
     @classmethod
-    @transaction.atomic
     def create(cls, *, site_id, user, files, alt_text: str = "", page=None) -> "list[Image]":
         """Create multiple image assets for a site.
 
@@ -343,20 +347,10 @@ class SiteImageService:
         if page is not None and page.site_id != site.id:
             raise ValidationError({"page": ["This page belongs to a different site."]})
 
-        images = []
-        try:
-            for file in files:
-                image = Image(site=site, page=page, file=file, alt_text=alt_text)
-                try:
-                    image.save()
-                except Exception:
-                    StorageCleaner.delete_written_files(image)
-                    raise
-                images.append(image)
-        except Exception:
-            for image in images:
-                image.file.storage.delete(image.file.name)
-            raise
+        images = [Image(site=site, page=page, file=file, alt_text=alt_text) for file in files]
+        
+        ledger = store_files(images)     
+        save_rows(images, ledger)
 
         return images
 
@@ -505,7 +499,6 @@ class SiteVideoService:
 
 
     @classmethod
-    @transaction.atomic
     def create(cls, *, site_id, user, files, page=None) -> "list[Video]":
         """Create multiple video assets for a site.
 
@@ -535,22 +528,12 @@ class SiteVideoService:
         if page is not None and page.site_id != site.id:
             raise ValidationError({"page": ["This page belongs to a different site."]})
 
-        videos = []
-        try:
-            for file in files:
-                title = os.path.splitext(file.name)[0][:255]
-                video = Video(site=site, page=page, file=file, title=title)
-                try:
-                    video.save()
-                except Exception:
-                    StorageCleaner.delete_written_files(video)
-                    raise
-                videos.append(video)
-        except Exception:
-            for video in videos:
-                video.file.storage.delete(video.file.name)
-            raise
-
+        videos = [
+            Video(site=site, page=page, file=file, title=os.path.splitext(file.name)[0][:255])
+            for file in files
+        ]
+        ledger = store_files(videos)
+        save_rows(videos, ledger)
         return videos
 
 

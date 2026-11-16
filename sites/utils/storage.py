@@ -1,9 +1,10 @@
 """Provide file upload path generation and storage cleanup utilities."""
 
+import uuid
 import logging
 import os
 import threading
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 
 from django.conf import settings
 from django.db import transaction
@@ -12,6 +13,11 @@ from django.db.models import FileField
 from sites.exceptions import UploadBusy
 
 logger = logging.getLogger(__name__)
+
+_lock = threading.Lock()
+_pool = None
+_slots = None
+_pool_pid = None
 
 FOLDERS = {
     "css": "css",
@@ -51,7 +57,7 @@ def file_upload_path(instance, filename):
     else:
         raise ValueError(f"file_upload_path: unsupported model '{model}'")
 
-    return f"{owner}/{folder}/{filename}"
+    return f"{owner}/{folder}/{uuid.uuid4().hex}/{filename}"
 
 
 class StorageCleaner:
@@ -89,11 +95,36 @@ class StorageCleaner:
             logger.exception("Could not delete file %s", name)
 
 
+class Ledger:
+    """Track storage objects written by a single upload operation."""
 
-_lock = threading.Lock()
-_pool = None
-_slots = None
-_pool_pid = None
+    def __init__(self):
+        """Initialize an empty ledger of storage objects."""
+        self._entries = []
+        self._lock = threading.Lock()
+
+    def add(self, storage, name):
+        """Record a storage object for subsequent cleanup.
+
+        Args:
+            storage: Storage backend containing the file.
+            name: Storage-relative name of the file.
+        """
+        with self._lock:
+            self._entries.append((storage, name))
+
+    def delete_all(self):
+        """Delete all recorded storage objects and clear the ledger."""
+        with self._lock:
+            entries = list(self._entries)
+            self._entries.clear()
+
+        for storage, name in entries:
+            try:
+                storage.delete(name)
+            except Exception:
+                logger.exception("Could not delete %s; left for the orphan sweep", name)
+
 
 
 def _get_pool():
@@ -108,7 +139,7 @@ def _get_pool():
     if _pool is None or _pool_pid != pid:
         with _lock:
             if _pool is None or _pool_pid != pid:
-                size = getattr(settings, "UPLOAD_POOL_SIZE", 8)
+                size = getattr(settings, "UPLOAD_POOL_SIZE", 0)
                 queue = getattr(settings, "UPLOAD_QUEUE_SIZE", 32)
                 _pool = ThreadPoolExecutor(
                     max_workers=size, thread_name_prefix="upload"
@@ -148,34 +179,6 @@ def _submit(fn, *args):
     return future
 
 
-class Ledger:
-    """Track storage objects written by a single upload operation."""
-
-    def __init__(self):
-        """Initialize an empty ledger of storage objects."""
-        self._entries = []
-
-    def add(self, storage, name):
-        """Record a storage object for subsequent cleanup.
-
-        Args:
-            storage: Storage backend containing the file.
-            name: Storage-relative name of the file.
-        """
-        self._entries.append((storage, name))
-
-    def delete_all(self):
-        """Delete all recorded storage objects and clear the ledger."""
-        for storage, name in self._entries:
-            try:
-                storage.delete(name)
-            except Exception:
-                logger.exception(
-                    "Could not delete %s; left for the orphan sweep", name
-                )
-
-        self._entries.clear()
-
 
 def _write(instance, field_name, ledger):
     """Write one uploaded file to storage without performing database operations.
@@ -195,14 +198,14 @@ def _write(instance, field_name, ledger):
     intended = field.generate_filename(instance, upload.name)
     ledger.add(storage, intended)
 
-    actual = storage.save(intended, upload.file)
+    actual = storage.save(intended, upload.file, max_length=field.max_length)
     if actual != intended:
         ledger.add(storage, actual)
 
     setattr(instance, field_name, actual)
 
 
-def store_files(instances, field_name="file", workers=None):
+def store_files(instances, field_name="file"):
     """Store uploaded files and return a ledger for failure cleanup.
 
     Args:
@@ -217,25 +220,26 @@ def store_files(instances, field_name="file", workers=None):
         UploadBusy: If the upload queue is full.
         Exception: If any file fails to store.
     """
-    workers = workers or getattr(settings, "UPLOAD_WORKERS", 1)
     ledger = Ledger()
     errors = []
 
-    if workers > 1 and len(instances) > 1:
+    if getattr(settings, "UPLOAD_POOL_SIZE", 0) > 0 and len(instances) > 1:
         futures = []
-
-        for instance in instances:
-            try:
+        try:
+            for instance in instances:
                 futures.append(_submit(_write, instance, field_name, ledger))
-            except UploadBusy as exc:
-                errors.append(exc)
-                break
+        except Exception as exc:
+            errors.append(exc)
 
+        if not errors:
+            wait(futures, return_when=FIRST_EXCEPTION)
+        for future in futures:
+            future.cancel()
         wait(futures)
+
         errors += [
-            f.exception()
-            for f in futures
-            if f.exception() is not None
+            f.exception() for f in futures
+            if not f.cancelled() and f.exception() is not None
         ]
     else:
         for instance in instances:

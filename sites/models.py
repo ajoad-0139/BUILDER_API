@@ -20,14 +20,14 @@ class Theme(models.Model):
     description = models.TextField(blank=True, max_length=1000)
     is_active = models.BooleanField(default=True, help_text="Only active themes should be offered when creating a new site.")
     language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
-    thumbnail = models.ImageField(upload_to=file_upload_path)
+    thumbnail = models.ImageField(upload_to=file_upload_path, max_length=255)
 
-    header = models.FileField(upload_to=file_upload_path)
-    footer = models.FileField(upload_to=file_upload_path)
-    body = models.FileField(upload_to=file_upload_path, help_text="HTML file for the main page layout.")
+    header = models.FileField(upload_to=file_upload_path, max_length=255)
+    footer = models.FileField(upload_to=file_upload_path, max_length=255)
+    body = models.FileField(upload_to=file_upload_path, max_length=255, help_text="HTML file for the main page layout.")
 
-    css_file = models.FileField(upload_to=file_upload_path)
-    js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
+    css_file = models.FileField(upload_to=file_upload_path, max_length=255)
+    js_file = models.FileField(upload_to=file_upload_path, max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -63,18 +63,18 @@ class Site(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, help_text="Draft: work in progress. Published: live. Archived: retired.")
     published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Custom domain the site is served from, e.g. example.com.")
     slug = models.SlugField(max_length=255, blank=True, help_text="Leave blank to generate it from the name.")
-    favicon = models.ImageField(upload_to=file_upload_path, null=True, blank=True)
+    favicon = models.ImageField(upload_to=file_upload_path, max_length=255, null=True, blank=True)
 
     meta_description = models.CharField(max_length=160, blank=True, help_text="Default search result description. Up to 160 characters.")
-    og_image = models.FileField(upload_to=file_upload_path, null=True, blank=True, help_text="Default image for social media shares. Recommended size: 1200x630 px.")
+    og_image = models.FileField(upload_to=file_upload_path, max_length=255, null=True, blank=True, help_text="Default image for social media shares. Recommended size: 1200x630 px.")
     no_index = models.BooleanField(default=False, help_text="Ask search engines not to list this site.")
 
-    header = models.FileField(upload_to=file_upload_path)
-    footer = models.FileField(upload_to=file_upload_path)
-    body = models.FileField(upload_to=file_upload_path, help_text="HTML file for the main page layout.")
+    header = models.FileField(upload_to=file_upload_path , max_length=255)
+    footer = models.FileField(upload_to=file_upload_path , max_length=255)
+    body = models.FileField(upload_to=file_upload_path, max_length=255, help_text="HTML file for the main page layout.")
 
-    css_file = models.FileField(upload_to=file_upload_path)
-    js_file = models.FileField(upload_to=file_upload_path, null=True, blank=True)
+    css_file = models.FileField(upload_to=file_upload_path, max_length=255)
+    js_file = models.FileField(upload_to=file_upload_path, max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -150,7 +150,7 @@ class Image(models.Model):
     """Store image assets associated with themes, sites, or pages."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    file = models.ImageField(upload_to=file_upload_path, width_field="width", height_field="height")
+    file = models.ImageField(upload_to=file_upload_path, max_length=255, width_field="width", height_field="height")
     width = models.PositiveIntegerField(null=True, blank=True, editable=False)
     height = models.PositiveIntegerField(null=True, blank=True, editable=False)
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
@@ -189,7 +189,8 @@ class Image(models.Model):
             self.site_id = self.page.site_id
         self.clean()
         if self.file:
-            self.size = self.file.size
+            if not self.file._committed or self.size is None:
+                self.size = self.file.size
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -201,11 +202,11 @@ class Video(models.Model):
     """Store video assets associated with themes, sites, or pages."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    file = models.FileField(upload_to=file_upload_path)
+    file = models.FileField(upload_to=file_upload_path, max_length=255)
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
     title = models.CharField(max_length=255, blank=True)
     duration = models.PositiveIntegerField(null=True, blank=True, help_text="Length of the video in seconds.")
-    poster = models.ImageField(upload_to=file_upload_path, null=True, blank=True, help_text="Preview image shown before the video plays.")
+    poster = models.ImageField(upload_to=file_upload_path, max_length=255, null=True, blank=True, help_text="Preview image shown before the video plays.")
 
     theme = models.ForeignKey("Theme", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Set only for theme videos. Leave empty for site or page videos.")
     site = models.ForeignKey("Site", null=True, blank=True, on_delete=models.CASCADE, related_name="video_assets", help_text="Filled automatically when a page is selected.")
@@ -240,7 +241,8 @@ class Video(models.Model):
             self.site_id = self.page.site_id
         self.clean()
         if self.file:
-            self.size = self.file.size
+            if not self.file._committed or self.size is None:
+                self.size = self.file.size
         super().save(*args, **kwargs)
 
     def __str__(self):
