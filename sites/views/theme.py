@@ -5,6 +5,7 @@ from sites.utils.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
 from sites.services.theme import (ThemeService, ThemeImageService , ThemeVideoService)
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
+from sites.utils.cache_core import THEMES, cached, signature, theme_images, theme_videos
 from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer,
     ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ThemeImageUpdateInputSerializer, ThemeImageOutputSerializer,
     ThemeVideoOutputSerializer, ThemeVideoUpdateInputSerializer)
@@ -36,13 +37,15 @@ class ThemeList(APIView):
         query = self.list_query_serializer(data=request.query_params, partial=True)
         query.is_valid(raise_exception=True)
 
-        themes = self.services.list(**query.validated_data)
+        def build():
+            themes = self.services.list(**query.validated_data)
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(themes, request, view=self)
+            items = self.output_serializer(page, many=True).data
+            return paginator.get_paginated_data(items)
 
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(themes, request, view=self)
-        items = self.output_serializer(page, many=True).data
-
-        return success_response(paginator.get_paginated_data(items), "Themes retrieved")
+        data = cached(THEMES, signature(request, "list"), build)
+        return success_response(data, "Themes retrieved")
  
     def post(self, request):
         """Create a new theme.
