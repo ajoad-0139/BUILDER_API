@@ -1,12 +1,8 @@
-# sites/cache_signals.py
 """
-Invalidate the response cache whenever a row changes, from anywhere: the API, the admin,
-a shell, or a cascade (deleting a site deletes its pages and media, and each of those
-sends its own signal).
+Invalidate response caches when model rows change.
+Signals cover API, admin, shell, and cascade operations.
+"""
 
-Not covered, because Django sends no signals for them: queryset.update(), bulk_create()
-and raw SQL. Call invalidate() yourself after those.
-"""
 from django.db.models.signals import post_delete, post_save
 
 from sites.utils.cache_core import (
@@ -19,6 +15,16 @@ MODELS = (Theme, Site, Page, Image, Video)
 
 
 def _media_namespaces(instance, theme_ns, site_ns):
+    """Get cache namespaces for media relationships.
+
+    Args:
+        instance: Media model instance.
+        theme_ns: Theme namespace function.
+        site_ns: Site namespace function.
+
+    Returns:
+        list: Related cache namespaces.
+    """
     names = []
     if instance.theme_id:
         names.append(theme_ns(instance.theme_id))
@@ -28,6 +34,15 @@ def _media_namespaces(instance, theme_ns, site_ns):
 
 
 def namespaces_for(instance, deleted):
+    """Get cache namespaces affected by a model change.
+
+    Args:
+        instance: Changed model instance.
+        deleted: Whether the instance was deleted.
+
+    Returns:
+        list: Cache namespaces to invalidate.
+    """
     if isinstance(instance, Theme):
         names = [THEMES]
         if deleted:
@@ -53,10 +68,24 @@ def namespaces_for(instance, deleted):
 
 
 def _on_save(sender, instance, **kwargs):
+    """Invalidate caches after a model is saved.
+
+    Args:
+        sender: Model class that triggered the signal.
+        instance: Saved model instance.
+        **kwargs: Additional signal arguments.
+    """
     invalidate(*namespaces_for(instance, deleted=False))
 
 
 def _on_delete(sender, instance, **kwargs):
+    """Invalidate caches after a model is deleted.
+
+    Args:
+        sender: Model class that triggered the signal.
+        instance: Deleted model instance.
+        **kwargs: Additional signal arguments.
+    """
     invalidate(*namespaces_for(instance, deleted=True))
 
 
