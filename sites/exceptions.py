@@ -2,15 +2,22 @@
 
 import logging
 
+from django.http import JsonResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import DatabaseError
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.views import exception_handler
-
 from sites.utils.responses import error_response
 
 logger = logging.getLogger(__name__)
 
+
+
+def not_found(request, exception=None):
+    return JsonResponse(
+        {"success": False, "message": "Not found", "data": None, "errors": None},
+        status=404,
+    )
 
 def custom_exception_handler(exc, context):
     """Convert Django and DRF exceptions into a consistent API response."""
@@ -60,6 +67,12 @@ class APIError(APIException):
 
         if status_code:
             self.status_code = status_code
+
+class NotFound(APIError) :
+    "represent a not found error for any malformed url"
+
+    status_code = 404
+    default_detail = "Not Found"
 
 
 class ThemeAlreadyExists(APIError):

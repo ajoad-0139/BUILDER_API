@@ -1,24 +1,24 @@
 """Define the default pagination configuration for API responses."""
 
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 
 
-class DefaultPagination(PageNumberPagination):
-    """Provide page-number pagination with configurable page sizes."""
+class DefaultPagination(LimitOffsetPagination):
+    """Provide limit/offset pagination: ?limit=20&offset=40."""
 
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 100
+    default_limit = 10
+    max_limit = 100
+    limit_query_param = "limit"
+    offset_query_param = "offset"
 
     def get_paginated_data(self, items):
         """Return paginated items with pagination metadata."""
         return {
             "items": items,
             "pagination": {
-                "count": self.page.paginator.count,
-                "page": self.page.number,
-                "page_size": self.get_page_size(self.request),
-                "total_pages": self.page.paginator.num_pages,
+                "count": self.count,
+                "limit": self.limit,
+                "offset": self.offset,
                 "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
             },
