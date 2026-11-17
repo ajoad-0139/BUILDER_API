@@ -91,6 +91,28 @@ DATABASES = {
     },
 }
 
+# Redis Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": env("REDIS_CONNECT_TIMEOUT", default=2),
+            "SOCKET_TIMEOUT": env("REDIS_SOCKET_TIMEOUT", default=2),
+        },
+        "KEY_PREFIX": env("REDIS_KEY_PREFIX", default="myproject"),
+        "TIMEOUT": env("REDIS_CACHE_TIMEOUT", default=300),
+    }
+}
+
+# API Cache Settings
+API_CACHE_ENABLED = env.bool("API_CACHE_ENABLED", default=True)
+API_CACHE_TTL = env.int("API_CACHE_TTL", default=300)
+API_CACHE_INVALIDATE_ON_COMMIT = env.bool(
+    "API_CACHE_INVALIDATE_ON_COMMIT", default=True
+)
+
 #Storage
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

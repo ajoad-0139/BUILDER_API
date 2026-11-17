@@ -90,12 +90,12 @@ class ThemeDetail(APIView):
         """
 
 
-        theme = self.services.get(theme_id=theme_id)
+        def build():
+            theme = self.services.get(theme_id=theme_id)
+            return self.output_serializer(theme).data
 
-        return success_response(
-            self.output_serializer(theme).data,
-            "Theme retrieved",
-        )
+        data = cached(THEMES, signature(request, "detail", theme_id), build)
+        return success_response(data, "Theme retrieved")
  
     def patch(self, request, theme_id):
         """Partially update a theme.
@@ -156,12 +156,12 @@ class ThemeImageList(APIView):
         """
 
 
-        images = self.services.list(theme_id=theme_id)
+        def build():
+            images = self.services.list(theme_id=theme_id)
+            return self.output_serializer(images, many=True).data
 
-        return success_response(
-            self.output_serializer(images, many=True).data,
-            "Images retrieved",
-        )
+        data = cached(theme_images(theme_id), signature(request, "list"), build)
+        return success_response(data, "Images retrieved")
  
     def post(self, request, theme_id):
         """Upload images to a theme.
@@ -208,13 +208,12 @@ class ThemeImageDetail(APIView):
             Response containing the image.
         """
 
-
-        image = self.services.get(theme_id=theme_id, image_id=image_id)
-
-        return success_response(
-            self.output_serializer(image).data,
-            "Image retrieved",
-        )
+        def build () :
+            image = self.services.get(theme_id=theme_id, image_id=image_id)
+            return self.output_serializer(image).data
+            
+        data = cached(theme_images(theme_id),signature(request, "details", theme_id),build)
+        return success_response(data, "Image retrieved")
  
     def patch(self, request, theme_id, image_id):
         """Partially update a theme image.
@@ -277,13 +276,12 @@ class ThemeVideoList(APIView):
             Response containing serialized videos.
         """
 
-
-        videos = self.services.list(theme_id=theme_id)
-
-        return success_response(
-            self.output_serializer(videos, many=True).data,
-            "Videos retrieved",
-        )
+        def build() :
+            videos = self.services.list(theme_id=theme_id)
+            return self.output_serializer(videos, many=True).data
+            
+        data = cached(theme_videos(theme_id), signature(request,"list", theme_id), build)
+        return success_response(data, "Videos retrieved")
  
     def post(self, request, theme_id):
         """Upload videos to a theme.
@@ -329,13 +327,12 @@ class ThemeVideoDetail(APIView):
             Response containing the video.
         """
 
+        def build() :
+            video = self.services.get(theme_id=theme_id, video_id=video_id)
+            return self.output_serializer(video).data
 
-        video = self.services.get(theme_id=theme_id, video_id=video_id)
-
-        return success_response(
-            self.output_serializer(video).data,
-            "Video retrieved",
-        )
+        data = cached(theme_videos(theme_id), signature(request, "details", theme_id), build)
+        return success_response(data,"Video retrieved")
  
     def patch(self, request, theme_id, video_id):
         """Partially update a theme video.
