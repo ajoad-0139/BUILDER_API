@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from sites.utils.pagination import DefaultPagination
 from sites.utils.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
+from sites.utils.cache_core import SITES, cached, site_images, site_videos, signature
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
     SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,
@@ -33,17 +34,21 @@ class SiteList(APIView):
             Response containing paginated sites.
         """
 
+        def build() :
+            query = self.list_query_serializer(data=request.query_params, partial=True)
+            query.is_valid(raise_exception=True)
 
-        query = self.list_query_serializer(data=request.query_params, partial=True)
-        query.is_valid(raise_exception=True)
+            sites = self.services.list(user=request.user, **query.validated_data)
 
-        sites = self.services.list(user=request.user, **query.validated_data)
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(sites, request, view=self)
+            items = self.output_serializer(page, many=True).data
 
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(sites, request, view=self)
-        items = self.output_serializer(page, many=True).data
+            return paginator.get_paginated_data(items)
 
-        return success_response(paginator.get_paginated_data(items), "Sites retrieved")
+        data = cached(SITES, signature(request, "list"), build)
+
+        return success_response(data, "Sites retrieved")
  
     def post(self, request):
         """Create a new site.
@@ -89,13 +94,13 @@ class SiteDetail(APIView):
             Response containing the site.
         """
 
+        def build() :
+            site = self.services.get(site_id=site_id)
 
-        site = self.services.get(site_id=site_id)
-
-        return success_response(
-            self.output_serializer(site).data,
-            "Site retrieved",
-        )
+            return self.output_serializer(site).data
+        
+        data = cached(SITES, signature(request,"details", site_id), build)
+        return success_response(data,"Site retrieved")
     
     def patch(self, request, site_id):
         """Partially update a site.
@@ -158,16 +163,17 @@ class SiteImageList(APIView):
             Response containing serialized images.
         """
 
+        def build() :
+            query = self.list_query_serializer(data=request.query_params)
+            query.is_valid(raise_exception=True)
 
-        query = self.list_query_serializer(data=request.query_params)
-        query.is_valid(raise_exception=True)
+            images = self.services.list(site_id=site_id, **query.validated_data)
 
-        images = self.services.list(site_id=site_id, **query.validated_data)
+            return self.output_serializer(images, many=True, context={"request": request}).data
 
-        return success_response(
-            self.output_serializer(images, many=True, context={"request": request}).data,
-            "Images retrieved",
-        )
+        data = cached(site_images(site_id), signature(request, "list", site_id), build)
+
+        return success_response(data, "Images retrieved")
 
     def post(self, request, site_id):
         """Upload images to a site.
@@ -213,13 +219,12 @@ class SiteImageDetail(APIView):
             Response containing the image.
         """
 
-
-        image = self.services.get(site_id=site_id, image_id=image_id)
-
-        return success_response(
-            self.output_serializer(image, context={"request": request}).data,
-            "Image retrieved",
-        )
+        def build():
+            image = self.services.get(site_id=site_id, image_id=image_id)
+            return self.output_serializer(image, context={"request": request}).data
+        
+        data = cached(site_images(site_id), signature(request,"details",site_id), build)
+        return success_response(data, "Image retrieved")
  
     def patch(self, request, site_id, image_id):
         """Partially update a site image.
@@ -283,15 +288,16 @@ class SiteVideoList(APIView):
         """
 
 
-        query = self.list_query_serializer(data=request.query_params)
-        query.is_valid(raise_exception=True)
+        def build() :
+            query = self.list_query_serializer(data=request.query_params)
+            query.is_valid(raise_exception=True)
 
-        videos = self.services.list(site_id=site_id, **query.validated_data)
+            videos = self.services.list(site_id=site_id, **query.validated_data)
 
-        return success_response(
-            self.output_serializer(videos, many=True).data,
-            "Videos retrieved",
-        )
+            return self.output_serializer(videos, many=True).data
+
+        data = cached(site_videos(site_id), signature(request, "list", site_id), build)
+        return success_response(data, "Videos retrieved")
  
     def post(self, request, site_id):
         """Upload videos to a site.
@@ -338,13 +344,12 @@ class SiteVideoDetail(APIView):
             Response containing the video.
         """
 
-
-        video = self.services.get(site_id=site_id, video_id=video_id)
-
-        return success_response(
-            self.output_serializer(video).data,
-            "Video retrieved",
-        )
+        def build():
+            video = self.services.get(site_id=site_id, video_id=video_id)
+            return self.output_serializer(video).data
+        
+        data = cached(site_videos(site_id), signature(request, "details", site_id), build)
+        return success_response(data, "Video retrieved")
  
     def patch(self, request, site_id, video_id):
         """Partially update a site video.

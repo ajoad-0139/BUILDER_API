@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 PREFIX = "api"
 
 
-THEMES = "themes"                                  
+THEMES = "themes"    
+SITES = "sites"                              
 
 
 def theme_images(theme_id):
