@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from sites.utils.pagination import DefaultPagination
 from sites.utils.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
-from sites.utils.cache_core import SITES, cached, site_images, site_videos, site_detail, signature
+from sites.utils.cache_core import SITES, cached, site_images, site_videos, site_detail, signature, user_sites
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
     SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,
@@ -46,7 +46,7 @@ class SiteList(APIView):
 
             return paginator.get_paginated_data(items)
 
-        data = cached(SITES, signature(request, "list"), build)
+        data = cached(user_sites(request.user.pk), signature(request, "list"), build)
 
         return success_response(data, "Sites retrieved")
  
