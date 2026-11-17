@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from sites.utils.pagination import DefaultPagination
 from sites.utils.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
-from sites.utils.cache_core import SITES, cached, site_images, site_videos, signature
+from sites.utils.cache_core import SITES, cached, site_images, site_videos, site_detail, signature
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
     SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,
@@ -99,7 +99,7 @@ class SiteDetail(APIView):
 
             return self.output_serializer(site).data
         
-        data = cached(SITES, signature(request,"details", site_id), build)
+        data = cached(site_detail(site_id), signature(request,"details", site_id), build)
         return success_response(data,"Site retrieved")
     
     def patch(self, request, site_id):

@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from sites.utils.responses import success_response
 from sites.services.page import PageService
+from sites.utils.cache_core import signature, site_pages, cached
 from sites.serializers.page import (
     PageCreateInputSerializer, PageListQuerySerializer, PageOutputSerializer,
 )
@@ -29,16 +30,16 @@ class PageList(APIView):
             Response containing serialized pages.
         """
 
+        def build():
+            query = self.list_query_serializer(data=request.query_params)
+            query.is_valid(raise_exception=True)
 
-        query = self.list_query_serializer(data=request.query_params)
-        query.is_valid(raise_exception=True)
+            pages = self.services.list(site_id=site_id, **query.validated_data)
 
-        pages = self.services.list(site_id=site_id, **query.validated_data)
+            return self.output_serializer(pages, many=True).data
 
-        return success_response(
-            self.output_serializer(pages, many=True).data,
-            "Pages retrieved",
-        )
+        data = cached(site_pages(site_id), signature(request, "lists", site_id), build)
+        return success_response(data, "Pages retrieved")
  
     def post(self, request, site_id):
         """Create a new page for a site.
@@ -83,13 +84,13 @@ class PageDetail(APIView):
             Response containing the serialized page.
         """
 
+        def build():
+            page = self.services.get(site_id=site_id, page_id=page_id)
 
-        page = self.services.get(site_id=site_id, page_id=page_id)
+            return self.output_serializer(page).data
 
-        return success_response(
-            self.output_serializer(page).data,
-            "Page retrieved",
-        )
+        data = cached(site_pages(site_id), signature(request, "details", site_id, page_id), build)
+        return success_response(data, "Page retrieved")
  
     def patch(self, request, site_id, page_id):
         """Partially update an existing page.
