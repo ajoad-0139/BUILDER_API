@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'sites.ratelimit.middleware.RateLimitMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -101,9 +102,23 @@ CACHES = {
             "SOCKET_CONNECT_TIMEOUT": env("REDIS_CONNECT_TIMEOUT", default=2),
             "SOCKET_TIMEOUT": env("REDIS_SOCKET_TIMEOUT", default=2),
         },
-        "KEY_PREFIX": env("REDIS_KEY_PREFIX", default="myproject"),
+        "KEY_PREFIX": env("REDIS_KEY_PREFIX", default="presto-cache"),
         "TIMEOUT": env("REDIS_CACHE_TIMEOUT", default=300),
     }
+}
+
+# Rate Limit
+RATE_LIMIT = {
+    "ENABLED": env.bool("RATE_LIMIT_ENABLED", default=True),
+    "REDIS_URL": env("RATE_LIMIT_REDIS_URL", default="redis://127.0.0.1:6379/2"),
+    "SOCKET_TIMEOUT": env.float("RATE_LIMIT_SOCKET_TIMEOUT", default=0.08),
+    "EXEMPT_PATHS": ["/health/", "/admin/"],
+    "MAX_UPLOAD_BYTES": 100 * 1024 * 1024,
+    "POLICIES": {
+        "read":   {"capacity": 120, "rate": 2},     
+        "write":  {"capacity": 30,  "rate": 0.5},
+        "upload": {"capacity": 250, "rate": 2},
+    },
 }
 
 # API Cache Settings
