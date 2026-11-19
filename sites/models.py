@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
 
-from sites.utils.storage import file_upload_path
+from sites.utils.storage import file_upload_path, make_storage_key
 
 
 class Theme(models.Model):
@@ -21,6 +21,7 @@ class Theme(models.Model):
     is_active = models.BooleanField(default=True, help_text="Only active themes should be offered when creating a new site.")
     language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
     thumbnail = models.ImageField(upload_to=file_upload_path, max_length=255)
+    storage_key = models.CharField(max_length=64, unique=True, editable=False, help_text="Folder name in file storage. Set once, never changes.")
 
     header = models.FileField(upload_to=file_upload_path, max_length=255)
     footer = models.FileField(upload_to=file_upload_path, max_length=255)
@@ -39,6 +40,8 @@ class Theme(models.Model):
         if not self.slug:
             slug = slugify(self.name) or str(self.id)[:8]
             self.slug = slug
+        if not self.storage_key:
+            self.storage_key = make_storage_key(self.name, "theme")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -64,6 +67,7 @@ class Site(models.Model):
     published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Custom domain the site is served from, e.g. example.com.")
     slug = models.SlugField(max_length=255, blank=True, help_text="Leave blank to generate it from the name.")
     favicon = models.ImageField(upload_to=file_upload_path, max_length=255, null=True, blank=True)
+    storage_key = models.CharField(max_length=64, unique=True, editable=False, help_text="Folder name in file storage. Set once, never changes.")
 
     meta_description = models.CharField(max_length=160, blank=True, help_text="Default search result description. Up to 160 characters.")
     og_image = models.FileField(upload_to=file_upload_path, max_length=255, null=True, blank=True, help_text="Default image for social media shares. Recommended size: 1200x630 px.")
@@ -95,6 +99,8 @@ class Site(models.Model):
         if not self.slug:
             slug = slugify(self.name) or str(self.id)[:8]
             self.slug = slug
+        if not self.storage_key:
+            self.storage_key = make_storage_key(self.name, "site")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -109,7 +115,8 @@ class Page(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, blank=True, help_text="URL part of the page, Leave blank to generate it from the title.")
     page_type = models.CharField(max_length=255, help_text="Kind of page, e.g. home, about, contact.")
-    canonical_url = models.TextField(max_length=500, default="", help_text="Preferred full URL of this page for search engines, e.g. [https://example.com/about](https://example.com/about).")
+    canonical_url = models.TextField(max_length=500, default="", help_text="Preferred full URL of this page for search engines, e.g. https://example.com/about.",)
+    storage_key = models.CharField(max_length=64, editable=False, help_text="Folder name in file storage. Set once, never changes.")
 
     meta_title = models.CharField(max_length=70, blank=True, help_text="Title shown in search results. Up to 70 characters.")
     meta_description = models.CharField(max_length=160, blank=True, help_text="Description shown in search results. Up to 160 characters.")
@@ -132,6 +139,7 @@ class Page(models.Model):
 
         constraints = [
             models.UniqueConstraint(fields=["site", "slug"], name="uniq_page_slug_per_site"),
+            models.UniqueConstraint(fields=["site", "storage_key"], name="uniq_page_storage_key_per_site"),
         ]
 
     def save(self, *args, **kwargs):
@@ -139,6 +147,8 @@ class Page(models.Model):
         if not self.slug:
             slug = slugify(self.title) or str(self.id)[:8]
             self.slug = slug
+        if not self.storage_key:
+            self.storage_key = make_storage_key(self.title, "page")
         super().save(*args, **kwargs)
 
     def __str__(self):

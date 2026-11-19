@@ -24,7 +24,7 @@ class ThemeCreateInputSerializer(serializers.ModelSerializer):
             "thumbnail", "header", "footer", "body", "css_file", "js_file",
             "created_by", "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "storage_key"]
 
     is_active = serializers.BooleanField(default=True)
     
@@ -95,7 +95,7 @@ class ThemeOuputSerializer(serializers.ModelSerializer):
         model = Theme
         fields = [
             "id", "name", "slug", "description", "is_active", "language",
-            "thumbnail", "header", "footer", "body", "css_file", "js_file",
+            "thumbnail", "storage_key", "header", "footer", "body", "css_file", "js_file",
             "created_by", "created_at", "updated_at", 
         ]
         read_only_fields = fields

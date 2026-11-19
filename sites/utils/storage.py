@@ -1,23 +1,30 @@
 """Provide file upload path generation and storage cleanup utilities."""
 
+import re
 import uuid
 import logging
 import os
+import base64
+import secrets
 import threading
 from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
-
 from django.conf import settings
 from django.db import transaction
 from django.db.models import FileField
-
 from sites.exceptions import UploadBusy
+from django.utils.text import slugify
+from sites.utils.constraints import MAX_STEM
 
-logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
 _pool = None
 _slots = None
 _pool_pid = None
+
+
+_TOKEN_SUFFIX = re.compile(r"\.[a-z2-7]{6}$")
+
+logger = logging.getLogger(__name__)
 
 FOLDERS = {
     "css": "css",
@@ -28,36 +35,45 @@ FOLDERS = {
     **dict.fromkeys(["pdf", "doc", "docx"], "documents"),
 }
 
+def _key(owner):
+    return owner.storage_key or str(owner.pk)
+
+TOKEN_CHARS = 8
+
+
+def make_storage_key(name, fallback):
+    """`fallback` is used when the name gives an empty slug: "site", "theme" or "page"."""
+    base = slugify(name or "").strip("-") or fallback
+    return f"{base}-{short_token()}"
+
+def short_token(chars=TOKEN_CHARS):
+    """Random lowercase base32 text (a-z and 2-7): safe in URLs and file names."""
+    raw = secrets.token_bytes((chars * 5 + 7) // 8)
+    return base64.b32encode(raw).decode().lower().rstrip("=")[:chars]
 
 def file_upload_path(instance, filename):
-    """Generate an organized upload path based on file type and model owner.
-
-    Args:
-        instance: Model instance receiving the uploaded file.
-        filename: Original name of the uploaded file.
-
-    Returns:
-        str: Relative storage path organized by owner and file type.
-
-    Raises:
-        ValueError: If the model is not supported.
-    """
-    ext = os.path.splitext(filename)[1].lower().lstrip(".")
-    folder = FOLDERS.get(ext, "others")
+    stem, ext = os.path.splitext(os.path.basename(filename))
+    ext = ext.lower()
+    folder = FOLDERS.get(ext.lstrip("."), "others")
     model = instance._meta.model_name
 
     if model in ("image", "video"):
-        owner = f"sites/{instance.site_id}" if instance.site_id else f"themes/{instance.theme_id}"
-    elif model == "theme":
-        owner = f"themes/{instance.pk}"
+        owner = (f"sites/{_key(instance.site)}" if instance.site_id else f"themes/{_key(instance.theme)}")
+
+        stem = slugify(stem)[:MAX_STEM] or model
+        return f"{owner}/{folder}/{stem}-{short_token(6)}{ext}"
+
+    if model == "theme":
+        owner = f"themes/{_key(instance)}"
     elif model == "site":
-        owner = f"sites/{instance.pk}"
+        owner = f"sites/{_key(instance)}"
     elif model == "page":
-        owner = f"sites/{instance.site_id}/pages/{instance.pk}"
+        owner = f"sites/{_key(instance.site)}/pages/{_key(instance)}"
     else:
         raise ValueError(f"file_upload_path: unsupported model '{model}'")
 
-    return f"{owner}/{folder}/{uuid.uuid4().hex}/{filename}"
+    stem = _TOKEN_SUFFIX.sub("", stem)[:MAX_STEM]
+    return f"{owner}/{folder}/{stem}{ext}"
 
 
 class StorageCleaner:

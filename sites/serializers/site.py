@@ -24,7 +24,7 @@ class SiteCreateInputSerializer(serializers.ModelSerializer):
             "name", "description", "language", "theme", "published_domain",
             "favicon", "meta_description", "og_image", "no_index", "created_by",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "storage_key"]
 
     theme = serializers.PrimaryKeyRelatedField(queryset=Theme.objects.filter(is_active=True))
     favicon = serializers.ImageField(required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
@@ -118,7 +118,7 @@ class SiteOutputSerializer(serializers.ModelSerializer):
         model = Site
         fields = [
             "id", "name", "slug", "description", "language", "status",
-            "published_domain", "favicon", "meta_description", "og_image", "no_index",
+            "published_domain", "favicon", "storage_key", "meta_description", "og_image", "no_index",
             "header", "footer", "body", "css_file", "js_file",
             "theme", "created_by", "created_at", "updated_at",
         ]
@@ -143,6 +143,7 @@ class SiteUpdateInputSerializer(serializers.ModelSerializer):
             "name", "description", "language", "status", "published_domain",
             "favicon", "meta_description", "og_image", "no_index",
         ]
+        read_only_fields=["storage_key"]
 
     favicon = serializers.ImageField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
     og_image = serializers.FileField( required=False, allow_null=True, validators=[image_validator, validate_max_size(MAX_THUMBNAIL_SIZE)])
