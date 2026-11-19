@@ -5,7 +5,7 @@ from sites.utils.pagination import DefaultPagination
 from rest_framework.permissions import IsAuthenticated
 from sites.services.theme import (ThemeService, ThemeImageService , ThemeVideoService)
 from sites.serializers.asset import ImageOutputSerializer, VideoOutputSerializer
-from sites.utils.cache_core import THEMES, cached, signature, theme_images, theme_videos
+from sites.cache.cache_core import THEMES, cached, signature, theme_images, theme_videos
 from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer,
     ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ThemeImageUpdateInputSerializer, ThemeImageOutputSerializer,
     ThemeVideoOutputSerializer, ThemeVideoUpdateInputSerializer)

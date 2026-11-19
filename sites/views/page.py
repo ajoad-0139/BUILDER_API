@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from sites.utils.responses import success_response
 from sites.services.page import PageService
-from sites.utils.cache_core import signature, site_pages, cached
+from sites.cache.cache_core import signature, site_pages, cached
 from sites.serializers.page import (
     PageCreateInputSerializer, PageListQuerySerializer, PageOutputSerializer,
 )

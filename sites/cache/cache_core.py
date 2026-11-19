@@ -175,12 +175,12 @@ def _digest(parts):
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
-def signature(request, **extra):
+def signature(request, *extra):
     """Build request-specific cache key components.
 
     Args:
         request: HTTP request.
-        **extra: Additional cache key values.
+        *extra: Additional cache key values.
 
     Returns:
         tuple: Host, query string, and extra values.

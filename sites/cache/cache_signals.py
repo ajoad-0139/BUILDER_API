@@ -5,7 +5,7 @@ Signals cover API, admin, shell, and cascade operations.
 
 from django.db.models.signals import post_delete, post_save
 
-from sites.utils.cache_core import (
+from sites.cache.cache_core import (
     THEMES, invalidate, site_detail, site_images, site_pages, site_videos,
     theme_images, theme_videos, user_sites,
 )
