@@ -44,7 +44,7 @@ TOKEN_CHARS = 8
 def make_storage_key(name, fallback):
     """`fallback` is used when the name gives an empty slug: "site", "theme" or "page"."""
     base = slugify(name or "").strip("-") or fallback
-    return f"{base}-{short_token()}"
+    return base
 
 def short_token(chars=TOKEN_CHARS):
     """Random lowercase base32 text (a-z and 2-7): safe in URLs and file names."""

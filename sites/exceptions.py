@@ -109,6 +109,11 @@ class SiteNotFound(APIError):
     status_code = 404
     default_detail = "Site not found."
 
+class SiteAlreadyExist(APIError) :
+    "Represent a request for site creation , site name already exist"
+
+    status_code = 409
+    default_detail = "Site already exist with the requested name"
 
 class ImageNotFound(APIError):
     """Represent a request for an image that does not exist."""

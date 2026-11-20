@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils.text import slugify
+from django.db.models.functions import Lower
 
 from sites.utils.storage import file_upload_path, make_storage_key
 
@@ -34,6 +35,15 @@ class Theme(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="themes")
+
+    class Meta:
+        """Define the default ordering and database indexes for themes."""
+
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["language"]),
+        ]
+        constraints = [models.UniqueConstraint(Lower("slug"), name="unique_theme_slug")]
 
     def save(self, *args, **kwargs):
         """Generate a slug from the theme name when one is not provided."""
@@ -93,6 +103,7 @@ class Site(models.Model):
         indexes = [
             models.Index(fields=["status"]),
         ]
+        constraints = [models.UniqueConstraint(Lower("slug"), name="unique_site_slug")]
 
     def save(self, *args, **kwargs):
         """Generate a slug from the site name when one is not provided."""

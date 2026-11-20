@@ -44,8 +44,8 @@ class ThemeService :
         """
         
         
-        themes = Theme.objects.filter(name__iexact=name, language=language)
-        if themes.exists():
+        is_exists_theme = Theme.objects.filter(slug=slugify(name or "")).exists()
+        if is_exists_theme :
             raise ThemeAlreadyExists()
 
         theme = Theme(
@@ -132,11 +132,11 @@ class ThemeService :
         if not (user.is_staff or theme.created_by_id == user.id):
             raise PermissionDenied("You can't edit this theme.")
 
-        if "name" in data or "language" in data:
+        if "name" in data:
             name = data.get("name", theme.name)
-            language = data.get("language", theme.language)
-            duplicates = Theme.objects.filter(name__iexact=name, language=language).exclude(pk=theme.pk)
-            if duplicates.exists():
+            new_slug =slugify(name or "")
+            is_exists_theme = Theme.objects.filter(slug=new_slug).exists()
+            if is_exists_theme and theme.slug!=new_slug:
                 raise ThemeAlreadyExists()
 
         if "name" in data and "slug" not in data and data["name"] != theme.name:

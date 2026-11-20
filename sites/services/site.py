@@ -7,7 +7,8 @@ from sites.utils.storage import StorageCleaner
 from sites.models import Site, Image, Video
 from sites.utils.storage import save_rows, store_files
 from rest_framework.exceptions import ValidationError, PermissionDenied
-from sites.exceptions import ThemeIncomplete, SiteNotFound, ImageNotFound, VideoNotFound
+from sites.exceptions import (ThemeIncomplete, SiteNotFound, ImageNotFound, VideoNotFound, 
+    SiteAlreadyExist)
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,10 @@ class SiteService:
             raise ThemeIncomplete(
                 f"The selected theme is missing required files: {', '.join(missing)}."
             )
+
+        is_exist_site = Site.objects.filter(slug=slugify(name or "")).exists()
+        if is_exist_site :
+            raise SiteAlreadyExist()
         
         site = Site(
             created_by=created_by, theme=theme, name=name, language=language, 
@@ -164,12 +169,17 @@ class SiteService:
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied("You can't edit this site.")
 
+        new_name = data.get("name")
+        is_exist_site = Site.objects.filter(slug=slugify(new_name or "")).exists()
+        if is_exist_site and  new_name != site.name:
+            raise SiteAlreadyExist()
+
         if status == Site.Status.PUBLISHED and not domain:
             raise ValidationError({
                 "published_domain": ["A domain is required to publish a site."]
             })
 
-        new_name = data.get("name")
+        
         if new_name and new_name != site.name:
             new_slug = slugify(new_name)
             site.slug = new_slug
