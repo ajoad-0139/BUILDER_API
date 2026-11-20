@@ -94,7 +94,7 @@ class ThemeOuputSerializer(serializers.ModelSerializer):
 
         model = Theme
         fields = [
-            "id", "name", "slug", "description", "is_active", "language",
+            "id", "number", "name", "slug", "description", "is_active", "language",
             "thumbnail", "storage_key", "header", "footer", "body", "css_file", "js_file",
             "created_by", "created_at", "updated_at", 
         ]

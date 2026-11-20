@@ -96,7 +96,7 @@ class PageOutputSerializer(serializers.ModelSerializer):
         
         model = Page
         fields = [
-            "id", "title", "slug", "page_type", "canonical_url",
+            "id", "number", "title", "slug", "page_type", "canonical_url",
             "meta_title", "meta_description", "og_title", "og_description",
             "og_image", "no_index", "html_file", "css_file", "js_file",
             "site", "created_at", "updated_at",

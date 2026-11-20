@@ -15,7 +15,7 @@ class ImageOutputSerializer(serializers.ModelSerializer):
         """
 
         model = Image
-        fields = ["id", "file", "width", "height", "size", "alt_text", "created_at"]
+        fields = ["id", "number", "file", "width", "height", "size", "alt_text", "created_at"]
         read_only_fields = fields
 
 
@@ -33,5 +33,5 @@ class VideoOutputSerializer(serializers.ModelSerializer):
         """
 
         model = Video
-        fields = ["id", "file", "title", "duration", "size", "poster", "created_at"]
+        fields = ["id", "number", "file", "title", "duration", "size", "poster", "created_at"]
         read_only_fields = fields

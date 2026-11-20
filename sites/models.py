@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.expressions import RawSQL
 from django.utils.text import slugify
 from django.db.models.functions import Lower
 
@@ -17,6 +18,10 @@ class Theme(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
+    number = models.BigIntegerField(unique=True, editable=False,
+        db_default=RawSQL(f"nextval('sites_theme_number_seq')", [], output_field=models.BigIntegerField()),
+        help_text="Unique within this table. Assigned by the database, never reused, may have gaps.",
+    )
     slug = models.SlugField(blank=True, help_text="Leave blank to generate it from the name.")
     description = models.TextField(blank=True, max_length=1000)
     is_active = models.BooleanField(default=True, help_text="Only active themes should be offered when creating a new site.")
@@ -72,6 +77,10 @@ class Site(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    number = models.BigIntegerField(unique=True, editable=False,
+        db_default=RawSQL(f"nextval('sites_site_number_seq')", [], output_field=models.BigIntegerField()),
+        help_text="Unique within this table. Assigned by the database, never reused, may have gaps.",
+    )
     language = models.CharField(max_length=10, default="en", help_text="Language code, e.g. en, bn, fr.")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, help_text="Draft: work in progress. Published: live. Archived: retired.")
     published_domain = models.CharField(max_length=255, blank=True, null=True, unique=True, help_text="Custom domain the site is served from, e.g. example.com.")
@@ -124,6 +133,10 @@ class Page(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
+    number = models.BigIntegerField(unique=True, editable=False,
+        db_default=RawSQL(f"nextval('sites_page_number_seq')", [], output_field=models.BigIntegerField()),
+        help_text="Unique within this table. Assigned by the database, never reused, may have gaps.",
+    )
     slug = models.SlugField(max_length=255, blank=True, help_text="URL part of the page, Leave blank to generate it from the title.")
     page_type = models.CharField(max_length=255, help_text="Kind of page, e.g. home, about, contact.")
     canonical_url = models.TextField(max_length=500, default="", help_text="Preferred full URL of this page for search engines, e.g. https://example.com/about.",)
@@ -171,6 +184,10 @@ class Image(models.Model):
     """Store image assets associated with themes, sites, or pages."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    number = models.BigIntegerField(unique=True, editable=False,
+        db_default=RawSQL(f"nextval('sites_image_number_seq')", [], output_field=models.BigIntegerField()),
+        help_text="Unique within this table. Assigned by the database, never reused, may have gaps.",
+    )
     file = models.ImageField(upload_to=file_upload_path, max_length=255, width_field="width", height_field="height")
     width = models.PositiveIntegerField(null=True, blank=True, editable=False)
     height = models.PositiveIntegerField(null=True, blank=True, editable=False)
@@ -223,6 +240,10 @@ class Video(models.Model):
     """Store video assets associated with themes, sites, or pages."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    number = models.BigIntegerField(unique=True, editable=False,
+        db_default=RawSQL(f"nextval('sites_video_number_seq')", [], output_field=models.BigIntegerField()),
+        help_text="Unique within this table. Assigned by the database, never reused, may have gaps.",
+    )
     file = models.FileField(upload_to=file_upload_path, max_length=255)
     size = models.PositiveBigIntegerField(null=True, blank=True, editable=False)
     title = models.CharField(max_length=255, blank=True)

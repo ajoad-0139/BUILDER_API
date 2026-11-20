@@ -117,7 +117,7 @@ class SiteOutputSerializer(serializers.ModelSerializer):
 
         model = Site
         fields = [
-            "id", "name", "slug", "description", "language", "status",
+            "id", "number", "name", "slug", "description", "language", "status",
             "published_domain", "favicon", "storage_key", "meta_description", "og_image", "no_index",
             "header", "footer", "body", "css_file", "js_file",
             "theme", "created_by", "created_at", "updated_at",
