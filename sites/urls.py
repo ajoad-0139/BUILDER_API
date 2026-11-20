@@ -6,6 +6,7 @@ from sites.views.page import PageList, PageDetail
 from sites.views.auth import CsrfView, LoginView, LogoutView, MeView
 from sites.views.theme import ThemeList, ThemeDetail, ThemeImageList, ThemeImageDetail, ThemeVideoList, ThemeVideoDetail
 from sites.views.site import SiteList, SiteDetail, SiteImageList, SiteImageDetail, SiteVideoList, SiteVideoDetail
+from sites.views.deploy import PreviewSite, PublishSite
 
 urlpatterns = [
 
@@ -31,4 +32,6 @@ urlpatterns = [
     path("sites/<uuid:site_id>/pages", PageList.as_view(), name="page-list"),                        
     path("sites/<uuid:site_id>/pages/<uuid:page_id>", PageDetail.as_view(), name="page-detail"),     
 
+    path("sites/<uuid:site_id>/preview", PreviewSite.as_view(), name="preview"),
+    path("sites/<uuid:site_id>/publish", PublishSite.as_view(), name="publish")
 ]
