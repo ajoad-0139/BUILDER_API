@@ -161,6 +161,12 @@ UPLOAD_POOL_SIZE = 4
 UPLOAD_QUEUE_SIZE = 32
 UPLOAD_QUEUE_WAIT = 30
 
+EXPORT_ROOT = BASE_DIR / "exports"          
+EXPORT_VERSION = "beta"
+EXPORT_SUBDOMAIN = "123presto"
+EXPORT_CDN_BASE_URL = "https://cdn.123presto.com"
+EXPORT_JSON_INDENT = 4
+
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "sites.exceptions.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": [

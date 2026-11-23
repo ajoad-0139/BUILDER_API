@@ -147,3 +147,13 @@ class UploadBusy(APIError):
 
     status_code = 503
     default_detail = "Too many uploads in progress, try again shortly."
+
+class FileNotFound(APIError):
+    """Represent a request for an file that does not exist."""
+
+    status_code = 404
+    default_detail = "File not found."
+
+class SiteSlugConflict(APIError):
+    status_code = 409
+    default_detail = "Another site uses the same slug, so exporting would overwrite its files."
