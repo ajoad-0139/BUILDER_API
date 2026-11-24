@@ -6,7 +6,7 @@ from sites.views.page import PageList, PageDetail
 from sites.views.auth import CsrfView, LoginView, LogoutView, MeView
 from sites.views.theme import ThemeList, ThemeDetail, ThemeImageList, ThemeImageDetail, ThemeVideoList, ThemeVideoDetail
 from sites.views.site import SiteList, SiteDetail, SiteImageList, SiteImageDetail, SiteVideoList, SiteVideoDetail
-from sites.views.preview_publish import PreviewSite, PublishSite
+from sites.views.export import PreviewSite, PublishSite
 
 urlpatterns = [
 

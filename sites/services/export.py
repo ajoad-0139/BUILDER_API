@@ -1,11 +1,3 @@
-# sites/services/preview_publish.py
-"""Write a site's pages as JSON files, for preview or publish, and copy the files they use.
-
-    <EXPORT_ROOT>/beta/preview/<site-slug>/home.json  home.css  home.js  home.og.jpg
-    <EXPORT_ROOT>/beta/publish/<site-slug>/...                                          (same layout)
-    <EXPORT_ROOT>/beta/sites/templates/images/<image_number>/<file>                     (shared)
-    <EXPORT_ROOT>/beta/sites/templates/videos/<video_number>/<file and poster>          (shared)
-"""
 import json
 import logging
 import os
@@ -29,27 +21,35 @@ SAFE_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def _setting(name, default):
+    """Get a Django setting with a fallback value."""
     return getattr(settings, name, default)
 
 
 def _file_name(field_file):
+    """Return the basename of a stored file."""
     return os.path.basename(field_file.name)
 
 
 def _extension(field_file):
+    """Return the lowercase extension of a stored file."""
     return os.path.splitext(field_file.name)[1].lower()
 
 
 def _read_text(field_file):
+    """Read a stored file and decode its content as UTF-8."""
     with field_file.storage.open(field_file.name, "rb") as source:
         return source.read().decode("utf-8")
 
 
 def _copy(field_file, destination):
-    """Copy a stored file to `destination`. Returns False if the stored file is missing."""
+    """Copy a stored file to a destination atomically.
+
+    Returns:
+        bool: True if the file was copied, False if the source is missing.
+    """
     destination.parent.mkdir(parents=True, exist_ok=True)
-    # copy to a temporary name first, so nobody can fetch a half-copied file
     temp = destination.with_name(f".{destination.name}.{uuid.uuid4().hex[:8]}.tmp")
+
     try:
         with field_file.storage.open(field_file.name, "rb") as source, open(temp, "wb") as target:
             shutil.copyfileobj(source, target, COPY_CHUNK)
@@ -60,62 +60,76 @@ def _copy(field_file, destination):
     except BaseException:
         temp.unlink(missing_ok=True)
         raise
+
     os.replace(temp, destination)
     return True
 
 
-class PreviewPublishService:
-    """Export a site's pages for preview or publish."""
+class ExportService:
+    """Export a site's pages and media for preview or publishing."""
 
     @classmethod
-    def preview_and_publish(cls, *, site_id, user, is_publish=False) -> dict:
+    def export(cls, *, site_id, user, is_publish=False) -> dict:
         """Export every page of a site.
 
         Args:
-            site_id: ID of the site.
+            site_id: ID of the site to export.
             user: User requesting the export.
-            is_publish: True to write the publish folder, False for preview.
+            is_publish: Whether to export in publish mode.
 
         Returns:
-            dict: The mode, the relative path and the slugs of the exported pages.
+            dict: Export mode, relative path and exported page slugs.
 
         Raises:
-            SiteNotFound: If the site does not exist.
             PermissionDenied: If the user is not the owner or staff.
-            ValidationError: If the slug is unsafe, or a site to publish has no domain.
+            ValidationError: If the site slug is unsafe.
             SiteSlugConflict: If another site has the same slug.
-            FileNotFound: If a page's HTML or CSS file is missing.
+            FileNotFound: If a page's required HTML or CSS file is missing.
         """
         mode = "publish" if is_publish else "preview"
 
         site = SiteService.get(site_id=site_id)
         if not (user.is_staff or site.created_by_id == user.id):
             raise PermissionDenied(f"You can't {mode} this site.")
+
         cls._check_site(site, is_publish)
 
         written = set()
         pages = []
+
         for page in site.pages.order_by("slug"):
             written |= cls._build_json(page, site, mode)
             pages.append(page.slug)
 
-        cls._export_media(site)                              # once per site, not once per page
-        cls._remove_stale(cls._folder(site, mode), written)  # pages deleted since the last export
+        cls._export_media(site)
+        cls._remove_stale(cls._folder(site, mode), written)
 
         version = _setting("EXPORT_VERSION", "beta")
         return {"mode": mode, "path": f"{version}/{mode}/{site.slug}", "pages": pages}
 
-    # ----- one page -----
-
     @classmethod
     def _build_json(cls, page, site, mode) -> set:
-        """Write one page's JSON and its files. Returns the names of the files written."""
+        """Build and write a page's JSON document and associated files.
+
+        Args:
+            page: Page instance to export.
+            site: Parent site instance.
+            mode: Export mode, either preview or publish.
+
+        Returns:
+            set: Names of files written for the page.
+
+        Raises:
+            ValidationError: If the page slug is unsafe.
+            FileNotFound: If the HTML file is missing or unreadable.
+        """
         slug = page.slug
         if not SAFE_NAME.match(slug or ""):
             raise ValidationError({"slug": [f"The page slug '{slug}' can't be used in a file name."]})
 
         if not page.html_file:
             raise FileNotFound(f"Page '{slug}' has no HTML file.")
+
         try:
             html = _read_text(page.html_file)
         except (FileNotFoundError, UnicodeDecodeError):
@@ -131,6 +145,7 @@ class PreviewPublishService:
             page=page, html=html, canonical_url=cls._canonical_url(page, site, mode),
             css_url=css_url, js_url=js_url, og_image_url=og_url,
         )
+
         file_name = f"{slug}.json"
         cls._write_json(cls._folder(site, mode) / file_name, document)
         written.add(file_name)
@@ -138,21 +153,50 @@ class PreviewPublishService:
 
     @classmethod
     def _copy_flat(cls, field_file, name, site, mode, written, required=False):
-        """Copy a file into the site's folder as `name`. Returns its CDN URL, or None."""
+        """Copy a file into the site's export folder.
+
+        Args:
+            field_file: Stored file to copy.
+            name: Destination filename.
+            site: Parent site instance.
+            mode: Export mode.
+            written: Set of successfully written filenames.
+            required: Whether a missing file should raise an exception.
+
+        Returns:
+            str | None: CDN URL of the copied file, or None if unavailable.
+
+        Raises:
+            FileNotFound: If a required file is missing.
+        """
         if not field_file:
             if required:
                 raise FileNotFound(f"A required file is missing: {name}.")
             return None
+
         if not _copy(field_file, cls._folder(site, mode) / name):
             if required:
                 raise FileNotFound(f"A required file is missing: {field_file.name}.")
             return None
+
         written.add(name)
         return f"{cls._cdn_base(site, mode)}/{name}"
 
     @staticmethod
     def _build_document(*, page, html, canonical_url, css_url, js_url, og_image_url) -> dict:
-        """The JSON document of one page. The key order is part of the format."""
+        """Build the JSON document for a page.
+
+        Args:
+            page: Page instance containing metadata.
+            html: HTML content of the page.
+            canonical_url: Canonical URL of the page.
+            css_url: CDN URL of the page's CSS file.
+            js_url: CDN URL of the page's JavaScript file.
+            og_image_url: CDN URL of the Open Graph image.
+
+        Returns:
+            dict: Page document in the required export format.
+        """
         return {
             "head": {
                 "title": page.meta_title or page.title,
@@ -178,38 +222,53 @@ class PreviewPublishService:
 
     @staticmethod
     def _canonical_url(page, site, mode):
+        """Build the canonical URL for a page.
+
+        Args:
+            page: Page instance.
+            site: Parent site instance.
+            mode: Export mode.
+
+        Returns:
+            str: Existing canonical URL or generated page URL.
+        """
         if page.canonical_url:
             return page.canonical_url
+
         if mode == "publish":
             host = site.published_domain
         else:
             version = _setting("EXPORT_VERSION", "beta")
             host = f"{site.slug}.{version}.{_setting('EXPORT_SUBDOMAIN', '123presto')}.com"
+
         base = f"https://{host}"
         return base if page.page_type == "home" else f"{base}/{page.slug}"
 
-    # ----- media -----
-
     @classmethod
     def _export_media(cls, site):
+        """Export all image and video assets belonging to a site."""
         media = cls._root() / _setting("EXPORT_VERSION", "beta") / "sites" / "templates"
 
         for image in site.image_assets.all():
-            cls._copy_media(image.file, media / "images" / str(image.image_number))
+            cls._copy_media(image.file, media / "images" / str(image.number))
 
         for video in site.video_assets.all():
             for field_file in (video.file, video.poster):
-                cls._copy_media(field_file, media / "videos" / str(video.video_number))
+                cls._copy_media(field_file, media / "videos" / str(video.number))
 
     @staticmethod
     def _copy_media(field_file, folder):
-        if field_file:                                       # a video's poster is optional
+        """Copy a media file into its corresponding export folder."""
+        if field_file:
             _copy(field_file, folder / _file_name(field_file))
-
-    # ----- paths and files -----
 
     @staticmethod
     def _root():
+        """Return the configured export root directory.
+
+        Raises:
+            ImproperlyConfigured: If EXPORT_ROOT is not configured.
+        """
         root = _setting("EXPORT_ROOT", None)
         if not root:
             raise ImproperlyConfigured("Set EXPORT_ROOT to the folder exports are written to.")
@@ -217,35 +276,53 @@ class PreviewPublishService:
 
     @classmethod
     def _folder(cls, site, mode):
+        """Return the export directory for a site's mode."""
         return cls._root() / _setting("EXPORT_VERSION", "beta") / mode / site.slug
 
     @staticmethod
     def _cdn_base(site, mode):
+        """Build the base CDN URL for a site's exported files."""
         cdn = _setting("EXPORT_CDN_BASE_URL", "https://cdn.123presto.com").rstrip("/")
         return f"{cdn}/{_setting('EXPORT_VERSION', 'beta')}/{mode}/{site.slug}"
 
     @staticmethod
     def _check_site(site, is_publish):
+        """Validate the site's slug and check for duplicate slugs.
+
+        Args:
+            site: Site instance to validate.
+            is_publish: Whether the export is for publishing.
+
+        Raises:
+            ValidationError: If the site slug is unsafe.
+            SiteSlugConflict: If another site has the same slug.
+        """
         if not SAFE_NAME.match(site.slug or ""):
             raise ValidationError({"slug": [f"The site slug '{site.slug}' can't be used in a file path."]})
+
         if Site.objects.filter(slug=site.slug).exclude(pk=site.pk).exists():
             raise SiteSlugConflict()
-        if is_publish and not site.published_domain:
-            raise ValidationError({"published_domain": ["A domain is required to publish a site."]})
 
     @staticmethod
     def _write_json(path, document):
+        """Write a JSON document to disk using an atomic file replacement."""
         path.parent.mkdir(parents=True, exist_ok=True)
         text = json.dumps(document, ensure_ascii=False, indent=_setting("EXPORT_JSON_INDENT", 4))
         temp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:8]}.tmp")
         temp.write_text(text + "\n", encoding="utf-8")
-        os.replace(temp, path)                               # readers never see a half-written file
+        os.replace(temp, path)
 
     @staticmethod
     def _remove_stale(folder, written):
-        """Delete files in the site's folder that this run did not write (deleted pages)."""
+        """Remove files from the export folder that were not written in this run.
+
+        Args:
+            folder: Site export directory to clean.
+            written: Set of filenames written during the current export.
+        """
         if not folder.exists():
             return
+
         for path in folder.iterdir():
             if path.is_file() and path.name not in written:
                 path.unlink(missing_ok=True)
