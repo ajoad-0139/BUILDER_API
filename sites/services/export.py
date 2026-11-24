@@ -38,8 +38,11 @@ def _extension(field_file):
 def _read_text(field_file):
     """Read a stored file and decode its content as UTF-8."""
     with field_file.storage.open(field_file.name, "rb") as source:
-        return source.read().decode("utf-8")
-
+        html = source.read().decode("utf-8")
+        html = re.sub(r"\s+", " ", html)
+        html = re.sub(r">\s+<", "><", html)
+        
+    return html.strip()
 
 def _copy(field_file, destination):
     """Copy a stored file to a destination atomically.
@@ -97,8 +100,10 @@ class ExportService:
         written = set()
         pages = []
 
+        written |= cls._build_header_and_footer_json(site, mode)
+
         for page in site.pages.order_by("slug"):
-            written |= cls._build_json(page, site, mode)
+            written |= cls._build_page_json(page, site, mode)
             pages.append(page.slug)
 
         cls._export_media(site)
@@ -108,7 +113,56 @@ class ExportService:
         return {"mode": mode, "path": f"{version}/{mode}/{site.slug}", "pages": pages}
 
     @classmethod
-    def _build_json(cls, page, site, mode) -> set:
+    def _build_header_and_footer_json(cls, site, mode) ->set:
+        if not site.header :
+            raise FileNotFound(f"Site {site.slug} has no Header file.")
+
+        try :
+            header = _read_text(site.header)
+        except (FileNotFoundError, UnicodeDecodeError) :
+            raise FileNotFound(f"Site {site.slug} has not readable header file")
+
+        try :
+            footer = _read_text(site.footer)
+        except (FileNotFoundError, UnicodeDecodeError) :
+            raise FileNotFound(f"Site {site.slug} has not readable footer file")
+
+        written = set()
+        css_file = cls._copy_flat(site.css_file, f"{site.slug}-css-file.css", site, mode, written, required=True)
+        js_file = cls._copy_flat(site.js_file, f"{site.slug}-js-file.js", site, mode, written, required=True)
+        media = cls._root() / _setting("EXPORT_VERSION", "beta") / "sites" / "templates"
+        og_image = cls._copy_media(site.og_image, media / "images" / str(site.number))
+        favicon = cls._copy_media(site.favicon, media / "images" / str(site.number))
+
+        document = cls._build_header_document(name=site.name, description=site.description, language=site.language,status= site.status
+        , header=header, css_file=css_file, js_file=js_file, favicon=favicon, meta_description=site.meta_description, og_image=og_image)
+
+        cls._write_json(cls._folder(site, mode) / "header.json", document)
+        written.add("header.json")
+
+        cls._write_json(cls._folder(site, mode) / "footer.json", {"footer":footer})
+        written.add("footer.json")
+
+        return written
+
+    @staticmethod
+    def _build_header_document(*,name, description, language, status, header, css_file, js_file, favicon,
+     meta_description, og_image)->dict :
+        return {
+            "site_name":name,
+            "site_description":description,
+            "site_language" : language,
+            "site_status" : status,
+            "header" : header,
+            "css_file" : css_file,
+            "js_file" : js_file,
+            "favicon" : favicon,
+            "meta_description" : meta_description,
+            "og_image" : og_image
+        }
+
+    @classmethod
+    def _build_page_json(cls, page, site, mode) -> set:
         """Build and write a page's JSON document and associated files.
 
         Args:
@@ -250,11 +304,11 @@ class ExportService:
         media = cls._root() / _setting("EXPORT_VERSION", "beta") / "sites" / "templates"
 
         for image in site.image_assets.all():
-            cls._copy_media(image.file, media / "images" / str(image.number))
+            cls._copy_media(image.file, media / "images" / str(site.number))
 
         for video in site.video_assets.all():
             for field_file in (video.file, video.poster):
-                cls._copy_media(field_file, media / "videos" / str(video.number))
+                cls._copy_media(field_file, media / "videos" / str(site.number))
 
     @staticmethod
     def _copy_media(field_file, folder):
