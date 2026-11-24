@@ -3,17 +3,18 @@
 from django.urls import path
 
 from sites.views.page import PageList, PageDetail
-from sites.views.auth import CsrfView, LoginView, LogoutView, MeView
+from sites.views.auth import RefreshView, RegisterView, LoginView, LogoutView, MeView
 from sites.views.theme import ThemeList, ThemeDetail, ThemeImageList, ThemeImageDetail, ThemeVideoList, ThemeVideoDetail
 from sites.views.site import SiteList, SiteDetail, SiteImageList, SiteImageDetail, SiteVideoList, SiteVideoDetail
 from sites.views.export import PreviewSite, PublishSite
 
 urlpatterns = [
 
-    path("auth/csrf", CsrfView.as_view()),
-    path("auth/login", LoginView.as_view()),
-    path("auth/logout", LogoutView.as_view()),
-    path("auth/me", MeView.as_view()),
+    path("auth/register", RegisterView.as_view(), name="auth-register"),
+    path("auth/login", LoginView.as_view(), name="auth-login"),
+    path("auth/refresh", RefreshView.as_view(), name="auth-refresh"),
+    path("auth/logout", LogoutView.as_view(), name="auth-logout"),
+    path("auth/me", MeView.as_view(), name="auth-me"),
 
     path("themes", ThemeList.as_view(), name="theme-list"),                                  
     path("themes/<uuid:theme_id>", ThemeDetail.as_view(), name="theme-detail"),             
