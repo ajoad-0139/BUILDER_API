@@ -30,8 +30,6 @@ Built with **Django 6**, **Django REST Framework**, **PostgreSQL** and **Redis**
 - [Project structure](#project-structure)
 - [Production checklist](#production-checklist)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 
