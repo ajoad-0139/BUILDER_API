@@ -1,3 +1,5 @@
+"""Provide interfaces for admin workflow """
+
 import os
 
 from django import forms

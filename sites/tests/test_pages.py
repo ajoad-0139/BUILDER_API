@@ -1,3 +1,5 @@
+"""Provide test cases for pages"""
+
 import os
 import uuid
 

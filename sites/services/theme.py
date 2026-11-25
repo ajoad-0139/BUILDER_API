@@ -1,3 +1,5 @@
+"""Provide business logic for managing themes"""
+
 import os
 import logging
 from django.db import transaction

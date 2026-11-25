@@ -1,3 +1,5 @@
+"""Provide business logic for managing site pages."""
+
 from sites.services.site import SiteService
 from sites.models import Page
 from sites.utils.storage import StorageCleaner

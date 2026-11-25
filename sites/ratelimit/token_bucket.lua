@@ -12,7 +12,6 @@ local PERIOD_MS = 60000
 local t = redis.call('TIME')
 local now = tonumber(t[1]) * 1000 + math.floor(tonumber(t[2]) / 1000)
 
--- Milliseconds needed to refill `units`, rounded up.
 local function ms_for(units)
   return math.ceil(units * PERIOD_MS / rate)
 end
@@ -21,15 +20,15 @@ local state = redis.call('HMGET', KEYS[1], 'tokens', 'last_refill')
 local tokens, last = tonumber(state[1]), tonumber(state[2])
 
 if tokens == nil or last == nil then
-  tokens, last = capacity, now            -- a missing bucket is a full bucket
+  tokens, last = capacity, now            
 else
-  if last > now then last = now end       -- guard against clock steps
+  if last > now then last = now end       
   local added = math.floor((now - last) * rate / PERIOD_MS)
   tokens = math.min(capacity, tokens + added)
   if tokens >= capacity then
     last = now
   elseif added > 0 then
-    last = last + ms_for(added)           -- keep fractional refill progress
+    last = last + ms_for(added)           
   end
 end
 
@@ -40,7 +39,6 @@ if tokens >= cost then
   redis.call('HSET', KEYS[1],
     'tokens', string.format('%d', tokens),
     'last_refill', string.format('%d', last))
-  -- Expire once the bucket would be full again anyway.
   redis.call('PEXPIRE', KEYS[1], ms_for(capacity) + 1000)
 else
   retry = math.max(1, last + ms_for(cost - tokens) - now)

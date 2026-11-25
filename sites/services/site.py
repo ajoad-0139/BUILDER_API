@@ -1,3 +1,5 @@
+"""Provide business logic for managing sites"""
+
 import os
 import logging
 from django.core.files.base import ContentFile

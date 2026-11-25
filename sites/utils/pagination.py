@@ -13,6 +13,7 @@ class DefaultPagination(LimitOffsetPagination):
 
     def get_paginated_data(self, items):
         """Return paginated items with pagination metadata."""
+        
         return {
             "items": items,
             "pagination": {

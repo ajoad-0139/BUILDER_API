@@ -1,3 +1,4 @@
+"""Provide API views for page list and single page create, update, delete, and retrieval."""
 
 from rest_framework import status
 from rest_framework.views import APIView

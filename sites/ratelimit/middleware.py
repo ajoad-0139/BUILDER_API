@@ -1,6 +1,6 @@
 """Apply per-user token bucket rate limiting to every API request."""
-import math
 
+import math
 from rest_framework.renderers import JSONRenderer
 
 from sites.ratelimit.engine import UNITS, consume, get_conf, upload_cost, validate_conf
@@ -84,7 +84,7 @@ class RateLimitMiddleware:
             scope, cost = "write", UNITS
 
         result = consume(scope, f"user_{request.user.pk}", cost)
-        if result is None:  # Redis unavailable: fail open
+        if result is None:  
             return self.get_response(request)
 
         if not result.allowed:

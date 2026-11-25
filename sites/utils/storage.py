@@ -1,7 +1,6 @@
 """Provide file upload path generation and storage cleanup utilities."""
 
 import re
-import uuid
 import logging
 import os
 import base64
@@ -15,6 +14,8 @@ from sites.exceptions import UploadBusy
 from django.utils.text import slugify
 from sites.utils.constraints import MAX_STEM
 
+logger = logging.getLogger(__name__)
+
 
 _lock = threading.Lock()
 _pool = None
@@ -24,7 +25,6 @@ _pool_pid = None
 
 _TOKEN_SUFFIX = re.compile(r"\.[a-z2-7]{6}$")
 
-logger = logging.getLogger(__name__)
 
 FOLDERS = {
     "css": "css",
@@ -52,6 +52,22 @@ def short_token(chars=TOKEN_CHARS):
     return base64.b32encode(raw).decode().lower().rstrip("=")[:chars]
 
 def file_upload_path(instance, filename):
+    """Generate the storage path for an uploaded file.
+
+    Organizes files according to their model, owner, and file extension.
+    Image and video assets receive a random token to avoid filename conflicts.
+
+    Args:
+        instance: Model instance associated with the uploaded file.
+        filename: Original uploaded filename.
+
+    Returns:
+        str: Relative storage path for the uploaded file.
+
+    Raises:
+        ValueError: If the model type is not supported.
+    """
+    
     stem, ext = os.path.splitext(os.path.basename(filename))
     ext = ext.lower()
     folder = FOLDERS.get(ext.lstrip("."), "others")

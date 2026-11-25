@@ -1,3 +1,5 @@
+"""Provide authenticated API endpoints for managing sites, images, and videos."""
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -5,7 +7,7 @@ from rest_framework.views import APIView
 from sites.utils.pagination import DefaultPagination
 from sites.utils.responses import success_response
 from sites.services.site import SiteService, SiteImageService, SiteVideoService
-from sites.cache.cache_core import SITES, cached, site_images, site_videos, site_detail, signature, user_sites
+from sites.cache.cache_core import cached, site_images, site_videos, site_detail, signature, user_sites
 from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySerializer, SiteOutputSerializer,
     SiteUpdateInputSerializer, SiteImageCreateInputSerializer, SiteImageListQuerySerializer, SiteImageOutputSerializer,
     SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,

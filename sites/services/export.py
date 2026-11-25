@@ -1,3 +1,5 @@
+"""Provide services for exporting site pages and media to the filesystem."""
+
 import json
 import logging
 import os
@@ -22,21 +24,25 @@ SAFE_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 def _setting(name, default):
     """Get a Django setting with a fallback value."""
+
     return getattr(settings, name, default)
 
 
 def _file_name(field_file):
     """Return the basename of a stored file."""
+
     return os.path.basename(field_file.name)
 
 
 def _extension(field_file):
     """Return the lowercase extension of a stored file."""
+
     return os.path.splitext(field_file.name)[1].lower()
 
 
 def _read_text(field_file):
     """Read a stored file and decode its content as UTF-8."""
+
     with field_file.storage.open(field_file.name, "rb") as source:
         html = source.read().decode("utf-8")
         html = re.sub(r"\s+", " ", html)
@@ -50,6 +56,7 @@ def _copy(field_file, destination):
     Returns:
         bool: True if the file was copied, False if the source is missing.
     """
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     temp = destination.with_name(f".{destination.name}.{uuid.uuid4().hex[:8]}.tmp")
 
@@ -89,6 +96,7 @@ class ExportService:
             SiteSlugConflict: If another site has the same slug.
             FileNotFound: If a page's required HTML or CSS file is missing.
         """
+
         mode = "publish" if is_publish else "preview"
 
         site = SiteService.get(site_id=site_id)
@@ -114,6 +122,23 @@ class ExportService:
 
     @classmethod
     def _build_header_and_footer_json(cls, site, mode) ->set:
+        """Build and write the site's header and footer JSON documents.
+
+        Exports the header, footer, CSS, JavaScript, favicon, and Open Graph
+        image into the appropriate preview or publish directory.
+
+        Args:
+            site: Site instance containing the shared site assets.
+            mode: Export mode, either preview or publish.
+
+        Returns:
+            set: Names of files successfully written.
+
+        Raises:
+            FileNotFound: If the header, footer, CSS, or JavaScript file
+                is missing or unreadable.
+        """
+
         if not site.header :
             raise FileNotFound(f"Site {site.slug} has no Header file.")
 
@@ -148,6 +173,24 @@ class ExportService:
     @staticmethod
     def _build_header_document(*,name, description, language, status, header, css_file, js_file, favicon,
      meta_description, og_image)->dict :
+        """Build the JSON document containing shared site metadata.
+
+        Args:
+            name: Site name.
+            description: Site description.
+            language: Site language.
+            status: Current site status.
+            header: Normalized header HTML content.
+            css_file: Exported CSS file URL.
+            js_file: Exported JavaScript file URL.
+            favicon: Exported favicon URL.
+            meta_description: Site meta description.
+            og_image: Exported Open Graph image URL.
+
+        Returns:
+            dict: Shared site metadata in the export format.
+        """
+        
         return {
             "site_name":name,
             "site_description":description,
@@ -177,6 +220,7 @@ class ExportService:
             ValidationError: If the page slug is unsafe.
             FileNotFound: If the HTML file is missing or unreadable.
         """
+
         slug = page.slug
         if not SAFE_NAME.match(slug or ""):
             raise ValidationError({"slug": [f"The page slug '{slug}' can't be used in a file name."]})
@@ -223,6 +267,7 @@ class ExportService:
         Raises:
             FileNotFound: If a required file is missing.
         """
+
         if not field_file:
             if required:
                 raise FileNotFound(f"A required file is missing: {name}.")
@@ -251,6 +296,7 @@ class ExportService:
         Returns:
             dict: Page document in the required export format.
         """
+
         return {
             "head": {
                 "title": page.meta_title or page.title,
@@ -286,6 +332,7 @@ class ExportService:
         Returns:
             str: Existing canonical URL or generated page URL.
         """
+
         if page.canonical_url:
             return page.canonical_url
 
@@ -301,6 +348,7 @@ class ExportService:
     @classmethod
     def _export_media(cls, site):
         """Export all image and video assets belonging to a site."""
+
         media = cls._root() / _setting("EXPORT_VERSION", "beta") / "sites" / "templates"
 
         for image in site.image_assets.all():
@@ -313,6 +361,7 @@ class ExportService:
     @staticmethod
     def _copy_media(field_file, folder):
         """Copy a media file into its corresponding export folder."""
+
         if field_file:
             _copy(field_file, folder / _file_name(field_file))
 
@@ -323,6 +372,7 @@ class ExportService:
         Raises:
             ImproperlyConfigured: If EXPORT_ROOT is not configured.
         """
+
         root = _setting("EXPORT_ROOT", None)
         if not root:
             raise ImproperlyConfigured("Set EXPORT_ROOT to the folder exports are written to.")
@@ -331,11 +381,13 @@ class ExportService:
     @classmethod
     def _folder(cls, site, mode):
         """Return the export directory for a site's mode."""
+
         return cls._root() / _setting("EXPORT_VERSION", "beta") / mode / site.slug
 
     @staticmethod
     def _cdn_base(site, mode):
         """Build the base CDN URL for a site's exported files."""
+
         cdn = _setting("EXPORT_CDN_BASE_URL", "https://cdn.123presto.com").rstrip("/")
         return f"{cdn}/{_setting('EXPORT_VERSION', 'beta')}/{mode}/{site.slug}"
 
@@ -351,6 +403,7 @@ class ExportService:
             ValidationError: If the site slug is unsafe.
             SiteSlugConflict: If another site has the same slug.
         """
+
         if not SAFE_NAME.match(site.slug or ""):
             raise ValidationError({"slug": [f"The site slug '{site.slug}' can't be used in a file path."]})
 
@@ -360,6 +413,7 @@ class ExportService:
     @staticmethod
     def _write_json(path, document):
         """Write a JSON document to disk using an atomic file replacement."""
+
         path.parent.mkdir(parents=True, exist_ok=True)
         text = json.dumps(document, ensure_ascii=False, indent=_setting("EXPORT_JSON_INDENT", 4))
         temp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:8]}.tmp")
@@ -374,6 +428,7 @@ class ExportService:
             folder: Site export directory to clean.
             written: Set of filenames written during the current export.
         """
+
         if not folder.exists():
             return
 

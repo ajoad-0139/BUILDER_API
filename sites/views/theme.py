@@ -1,3 +1,5 @@
+"""Provide authenticated API endpoints for managing themes, images, and videos."""
+
 from rest_framework import status
 from rest_framework.views import APIView
 from sites.utils.responses import success_response

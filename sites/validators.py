@@ -15,6 +15,7 @@ js_validator = FileExtensionValidator(allowed_extensions=list(JS_EXTENSIONS))
 
 def validate_max_size(max_bytes):
     """Validator factory: reusable size check for any uploaded file."""
+    
     def validator(file):
         if file.size > max_bytes:
             raise serializers.ValidationError(

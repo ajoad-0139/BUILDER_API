@@ -1,7 +1,5 @@
-"""Tests for the Lua token bucket and the middleware.
+"""Tests for the Lua token bucket and the middleware."""
 
-The bucket tests need Redis (set RATE_LIMIT_TEST_REDIS_URL, default db 15).
-"""
 import json
 import os
 import unittest

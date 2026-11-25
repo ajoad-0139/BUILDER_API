@@ -1,3 +1,5 @@
+"""Provide test cases for auth"""
+
 from datetime import timedelta
 
 import pytest

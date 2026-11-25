@@ -1,3 +1,5 @@
+"""Provide helper functions for testing"""
+
 import io
 
 from django.core.files.uploadedfile import SimpleUploadedFile
