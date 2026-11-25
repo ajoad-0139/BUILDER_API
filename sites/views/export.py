@@ -5,8 +5,15 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from sites.utils.responses import success_response
 from sites.services.export import ExportService
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from sites.utils.docs import envelope
 
 
+
+@extend_schema_view(post=extend_schema(
+    tags=["Export"], summary="Generate a site preview",
+    request=None, responses={201: envelope("PreviewSiteResponse")},
+))
 class PreviewSite(APIView):
     """Preview a site's exported content."""
 
@@ -27,6 +34,11 @@ class PreviewSite(APIView):
         return success_response(result, "site previewed", status.HTTP_201_CREATED)
 
 
+
+@extend_schema_view(post=extend_schema(
+    tags=["Export"], summary="Publish a site",
+    request=None, responses={201: envelope("PublishSiteResponse")},
+))
 class PublishSite(APIView):
     """Publish a site's exported content."""
 

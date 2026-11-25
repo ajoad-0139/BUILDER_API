@@ -1,0 +1,3293 @@
+openapi: 3.0.3
+info:
+  title: Presto API
+  version: 1.0.0
+  description: API for authentication, themes, sites, pages, media, preview and publishing.
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Authenticate a user and return authentication tokens.
+
+        Args:
+            request: HTTP request containing login credentials.
+
+        Returns:
+            Response: User details and generated authentication tokens.
+
+        Raises:
+            ValidationError: If the login data is invalid.
+            APIError: If the credentials are invalid or the account is disabled.
+      summary: Log in and obtain tokens
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+  /api/v1/auth/logout:
+    post:
+      operationId: v1_auth_logout_create
+      description: |-
+        Blacklist the supplied refresh token and complete logout.
+
+        Args:
+            request: HTTP request optionally containing a refresh token.
+
+        Returns:
+            Response: Logout confirmation.
+      summary: Log out (blacklist refresh token)
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+          description: ''
+  /api/v1/auth/me:
+    get:
+      operationId: v1_auth_me_retrieve
+      description: |-
+        Retrieve the authenticated user's basic profile information.
+
+        Args:
+            request: Authenticated HTTP request.
+
+        Returns:
+            Response: User ID and username.
+      summary: Get the current user
+      tags:
+      - Auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+          description: ''
+  /api/v1/auth/refresh:
+    post:
+      operationId: v1_auth_refresh_create
+      description: |-
+        Validate a refresh token and return renewed authentication tokens.
+
+        Args:
+            request: HTTP request containing the refresh token.
+
+        Returns:
+            Response: Newly generated token data.
+
+        Raises:
+            APIError: If the refresh token is missing, invalid, or expired.
+      summary: Refresh the access token
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+          description: ''
+  /api/v1/auth/register:
+    post:
+      operationId: v1_auth_register_create
+      description: |-
+        Register a new user and return authentication tokens.
+
+        Args:
+            request: HTTP request containing registration data.
+
+        Returns:
+            Response: Registration details and generated authentication tokens.
+
+        Raises:
+            ValidationError: If the registration data is invalid.
+      summary: Register a new user
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: ''
+  /api/v1/sites:
+    get:
+      operationId: v1_sites_list
+      description: |-
+        Retrieve the authenticated user's sites.
+
+        Args:
+            request: HTTP request containing query parameters.
+
+        Returns:
+            Response containing paginated sites.
+      summary: List my sites
+      parameters:
+      - in: query
+        name: language
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - published
+          - archived
+          type: string
+          minLength: 1
+        description: |-
+          * `draft` - Draft
+          * `published` - Published
+          * `archived` - Archived
+      tags:
+      - Sites
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteListResponse'
+          description: ''
+    post:
+      operationId: v1_sites_create
+      description: |-
+        Create a new site.
+
+        Args:
+            request: HTTP request containing site data.
+
+        Returns:
+            Response containing the created site.
+      summary: Create a site
+      tags:
+      - Sites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SiteCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SiteCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteCreateResponse'
+          description: ''
+  /api/v1/sites/{site_id}:
+    get:
+      operationId: v1_sites_retrieve
+      description: |-
+        Retrieve a site by its ID.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the site.
+      summary: Retrieve a site
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Sites
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_sites_partial_update
+      description: |-
+        Partially update a site.
+
+        Args:
+            request: HTTP request containing fields to update.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the updated site.
+      summary: Update a site
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Sites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteUpdateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteUpdateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteUpdateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_sites_destroy
+      description: |-
+        Delete a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a site
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Sites
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteDeleteResponse'
+          description: ''
+  /api/v1/sites/{site_id}/images:
+    get:
+      operationId: v1_sites_images_list
+      description: |-
+        Retrieve images belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized images.
+      summary: List site images
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteImageListResponse'
+          description: ''
+    post:
+      operationId: v1_sites_images_create
+      description: |-
+        Upload images to a site.
+
+        Args:
+            request: HTTP request containing image files and metadata.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the uploaded images.
+      summary: Upload site images
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SiteImageCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteImageUploadResponse'
+          description: ''
+  /api/v1/sites/{site_id}/images/{image_id}:
+    get:
+      operationId: v1_sites_images_retrieve
+      description: |-
+        Retrieve an image belonging to a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the image.
+      summary: Retrieve a site image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteImageDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_sites_images_partial_update
+      description: |-
+        Partially update a site image.
+
+        Args:
+            request: HTTP request containing image fields to update.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the updated image.
+      summary: Update a site image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteImageUpdateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteImageUpdateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteImageUpdateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteImageUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_sites_images_destroy
+      description: |-
+        Delete an image from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            image_id: ID of the image.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a site image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteImageDeleteResponse'
+          description: ''
+  /api/v1/sites/{site_id}/pages:
+    get:
+      operationId: v1_sites_pages_list
+      description: |-
+        Retrieve pages belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized pages.
+      summary: List pages of a site
+      parameters:
+      - in: query
+        name: page_type
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          minLength: 1
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Pages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageListResponse'
+          description: ''
+    post:
+      operationId: v1_sites_pages_create
+      description: |-
+        Create a new page for a site.
+
+        Args:
+            request: HTTP request containing page data.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the created page.
+      summary: Create a page
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Pages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PageCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PageCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCreateResponse'
+          description: ''
+  /api/v1/sites/{site_id}/pages/{page_id}:
+    get:
+      operationId: v1_sites_pages_retrieve
+      description: |-
+        Retrieve a specific page.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response containing the serialized page.
+      summary: Retrieve a page
+      parameters:
+      - in: path
+        name: page_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Pages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_sites_pages_partial_update
+      description: |-
+        Partially update an existing page.
+
+        Args:
+            request: HTTP request containing fields to update.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response containing the updated page.
+      summary: Update a page
+      parameters:
+      - in: path
+        name: page_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Pages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPageCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPageCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPageCreateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_sites_pages_destroy
+      description: |-
+        Delete a page from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            page_id: ID of the page.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a page
+      parameters:
+      - in: path
+        name: page_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Pages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDeleteResponse'
+          description: ''
+  /api/v1/sites/{site_id}/preview:
+    post:
+      operationId: v1_sites_preview_create
+      description: |-
+        Generate a preview of the specified site.
+
+        Args:
+            request: The HTTP request containing the authenticated user.
+            site_id: The ID of the site to preview.
+
+        Returns:
+            Response: A success response containing the preview result.
+      summary: Generate a site preview
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Export
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewSiteResponse'
+          description: ''
+  /api/v1/sites/{site_id}/publish:
+    post:
+      operationId: v1_sites_publish_create
+      description: |-
+        Publish the specified site.
+
+        Args:
+            request: The HTTP request containing the authenticated user.
+            site_id: The ID of the site to publish.
+
+        Returns:
+            Response: A success response containing the publish result.
+      summary: Publish a site
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Export
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSiteResponse'
+          description: ''
+  /api/v1/sites/{site_id}/videos:
+    get:
+      operationId: v1_sites_videos_list
+      description: |-
+        Retrieve videos belonging to a site.
+
+        Args:
+            request: HTTP request containing query parameters.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing serialized videos.
+      summary: List site videos
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteVideoListResponse'
+          description: ''
+    post:
+      operationId: v1_sites_videos_create
+      description: |-
+        Upload videos to a site.
+
+        Args:
+            request: HTTP request containing video files and metadata.
+            site_id: ID of the site.
+
+        Returns:
+            Response containing the uploaded videos.
+      summary: Upload site videos
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SiteVideoCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteVideoUploadResponse'
+          description: ''
+  /api/v1/sites/{site_id}/videos/{video_id}:
+    get:
+      operationId: v1_sites_videos_retrieve
+      description: |-
+        Retrieve a video belonging to a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the video.
+      summary: Retrieve a site video
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteVideoDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_sites_videos_partial_update
+      description: |-
+        Partially update a site video.
+
+        Args:
+            request: HTTP request containing video fields to update.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the updated video.
+      summary: Update a site video
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteVideoUpdateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteVideoUpdateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSiteVideoUpdateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteVideoUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_sites_videos_destroy
+      description: |-
+        Delete a video from a site.
+
+        Args:
+            request: HTTP request.
+            site_id: ID of the site.
+            video_id: ID of the video.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a site video
+      parameters:
+      - in: path
+        name: site_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Site Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteVideoDeleteResponse'
+          description: ''
+  /api/v1/themes:
+    get:
+      operationId: v1_themes_list
+      description: |-
+        Retrieve themes with optional filtering and pagination.
+
+        Args:
+            request: HTTP request containing query parameters.
+
+        Returns:
+            Response containing paginated themes.
+      summary: List themes
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: language
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          minLength: 1
+      tags:
+      - Themes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeListResponse'
+          description: ''
+    post:
+      operationId: v1_themes_create
+      description: |-
+        Create a new theme.
+
+        Args:
+            request: HTTP request containing theme data.
+
+        Returns:
+            Response containing the created theme.
+      summary: Create a theme
+      tags:
+      - Themes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeCreateResponse'
+          description: ''
+  /api/v1/themes/{theme_id}:
+    get:
+      operationId: v1_themes_retrieve
+      description: |-
+        Retrieve a theme by its ID.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the theme.
+      summary: Retrieve a theme
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Themes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_themes_partial_update
+      description: |-
+        Partially update a theme.
+
+        Args:
+            request: HTTP request containing fields to update.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the updated theme.
+      summary: Update a theme
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Themes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeCreateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeCreateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeCreateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_themes_destroy
+      description: |-
+        Delete a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a theme
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Themes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeDeleteResponse'
+          description: ''
+  /api/v1/themes/{theme_id}/images:
+    get:
+      operationId: v1_themes_images_list
+      description: |-
+        Retrieve images belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing serialized images.
+      summary: List theme images
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeImageListResponse'
+          description: ''
+    post:
+      operationId: v1_themes_images_create
+      description: |-
+        Upload images to a theme.
+
+        Args:
+            request: HTTP request containing image files and metadata.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing the uploaded images.
+      summary: Upload theme images
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeImageCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeImageUploadResponse'
+          description: ''
+  /api/v1/themes/{theme_id}/images/{image_id}:
+    get:
+      operationId: v1_themes_images_retrieve
+      description: |-
+        Retrieve an image belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the image.
+      summary: Retrieve a theme image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeImageDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_themes_images_partial_update
+      description: |-
+        Partially update a theme image.
+
+        Args:
+            request: HTTP request containing image fields to update.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response containing the updated image.
+      summary: Update a theme image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeImageUpdateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeImageUpdateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeImageUpdateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeImageUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_themes_images_destroy
+      description: |-
+        Delete an image from a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            image_id: ID of the image.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a theme image
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeImageDeleteResponse'
+          description: ''
+  /api/v1/themes/{theme_id}/videos:
+    get:
+      operationId: v1_themes_videos_list
+      description: |-
+        Retrieve videos belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+
+        Returns:
+            Response containing serialized videos.
+      summary: List theme videos
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeVideoListResponse'
+          description: ''
+    post:
+      operationId: v1_themes_videos_create
+      description: |-
+        Upload videos to a theme.
+
+        Args:
+            request: HTTP request containing video files and metadata.
+
+        Returns:
+            Response containing the uploaded videos.
+      summary: Upload theme videos
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ThemeVideoCreateInputRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeVideoUploadResponse'
+          description: ''
+  /api/v1/themes/{theme_id}/videos/{video_id}:
+    get:
+      operationId: v1_themes_videos_retrieve
+      description: |-
+        Retrieve a video belonging to a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the video.
+      summary: Retrieve a theme video
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeVideoDetailResponse'
+          description: ''
+    patch:
+      operationId: v1_themes_videos_partial_update
+      description: |-
+        Partially update a theme video.
+
+        Args:
+            request: HTTP request containing video fields to update.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response containing the updated video.
+      summary: Update a theme video
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeVideoUpdateInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeVideoUpdateInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedThemeVideoUpdateInputRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeVideoUpdateResponse'
+          description: ''
+    delete:
+      operationId: v1_themes_videos_destroy
+      description: |-
+        Delete a video from a theme.
+
+        Args:
+            request: HTTP request.
+            theme_id: ID of the theme.
+            video_id: ID of the video.
+
+        Returns:
+            Response confirming deletion.
+      summary: Delete a theme video
+      parameters:
+      - in: path
+        name: theme_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: video_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Theme Media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeVideoDeleteResponse'
+          description: ''
+components:
+  schemas:
+    ImageOutput:
+      type: object
+      description: |-
+        Serialize image data for API responses.
+
+        Returns image metadata including file URL, dimensions, file size,
+        alternative text, and creation timestamp.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        width:
+          type: integer
+          readOnly: true
+          nullable: true
+        height:
+          type: integer
+          readOnly: true
+          nullable: true
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        alt_text:
+          type: string
+          readOnly: true
+          description: Short description for screen readers and for when the image
+            fails to load.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - alt_text
+      - created_at
+      - file
+      - height
+      - id
+      - number
+      - size
+      - width
+    LoginData:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - id
+      - refresh
+      - username
+    LoginRequest:
+      type: object
+      description: Validate user login credentials.
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    LoginResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/LoginData'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    LogoutRequestRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    MeData:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+      required:
+      - id
+      - username
+    MeResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/MeData'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    PageCreateInputRequest:
+      type: object
+      description: |-
+        Validate and deserialize input data for creating a page.
+
+        Validates page metadata and uploaded HTML, CSS, JavaScript,
+        and Open Graph image files.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        page_type:
+          type: string
+          minLength: 1
+          description: Kind of page, e.g. home, about, contact.
+          maxLength: 255
+        canonical_url:
+          type: string
+          maxLength: 500
+        meta_title:
+          type: string
+          description: Title shown in search results. Up to 70 characters.
+          maxLength: 70
+        meta_description:
+          type: string
+          description: Description shown in search results. Up to 160 characters.
+          maxLength: 160
+        og_title:
+          type: string
+          description: Title shown when shared on social media. Up to 95 characters.
+          maxLength: 95
+        og_description:
+          type: string
+          description: Description shown when shared on social media. Up to 200 characters.
+          maxLength: 200
+        og_image:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        no_index:
+          type: boolean
+          default: false
+        html_file:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        css_file:
+          type: string
+          format: binary
+          pattern: (?:css)$
+        js_file:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:js)$
+      required:
+      - css_file
+      - html_file
+      - page_type
+      - title
+    PageCreateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    PageDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PageDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    PageListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    PageOutput:
+      type: object
+      description: |-
+        Serialize page data for API responses.
+
+        Returns page metadata, SEO fields, uploaded assets, associated
+        site information, and creation and update timestamps.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        title:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          default: ''
+          description: URL part of the page, Leave blank to generate it from the title.
+          pattern: ^[-a-zA-Z0-9_]+$
+        page_type:
+          type: string
+          readOnly: true
+          description: Kind of page, e.g. home, about, contact.
+        canonical_url:
+          type: string
+          readOnly: true
+          description: Preferred full URL of this page for search engines, e.g. https://example.com/about.
+        meta_title:
+          type: string
+          readOnly: true
+          description: Title shown in search results. Up to 70 characters.
+        meta_description:
+          type: string
+          readOnly: true
+          description: Description shown in search results. Up to 160 characters.
+        og_title:
+          type: string
+          readOnly: true
+          description: Title shown when shared on social media. Up to 95 characters.
+        og_description:
+          type: string
+          readOnly: true
+          description: Description shown when shared on social media. Up to 200 characters.
+        og_image:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: 'Image for social media shares. Recommended size: 1200x630
+            px.'
+        no_index:
+          type: boolean
+          readOnly: true
+          description: Ask search engines not to list this page.
+        html_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        css_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        js_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        site:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - canonical_url
+      - created_at
+      - css_file
+      - html_file
+      - id
+      - js_file
+      - meta_description
+      - meta_title
+      - no_index
+      - number
+      - og_description
+      - og_image
+      - og_title
+      - page_type
+      - site
+      - slug
+      - title
+      - updated_at
+    PageUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    PatchedPageCreateInputRequest:
+      type: object
+      description: |-
+        Validate and deserialize input data for creating a page.
+
+        Validates page metadata and uploaded HTML, CSS, JavaScript,
+        and Open Graph image files.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        page_type:
+          type: string
+          minLength: 1
+          description: Kind of page, e.g. home, about, contact.
+          maxLength: 255
+        canonical_url:
+          type: string
+          maxLength: 500
+        meta_title:
+          type: string
+          description: Title shown in search results. Up to 70 characters.
+          maxLength: 70
+        meta_description:
+          type: string
+          description: Description shown in search results. Up to 160 characters.
+          maxLength: 160
+        og_title:
+          type: string
+          description: Title shown when shared on social media. Up to 95 characters.
+          maxLength: 95
+        og_description:
+          type: string
+          description: Description shown when shared on social media. Up to 200 characters.
+          maxLength: 200
+        og_image:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        no_index:
+          type: boolean
+          default: false
+        html_file:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        css_file:
+          type: string
+          format: binary
+          pattern: (?:css)$
+        js_file:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:js)$
+    PatchedSiteImageUpdateInputRequest:
+      type: object
+      description: |-
+        Validate input data for updating a site image.
+
+        Supports replacing the image file and updating its alternative text.
+      properties:
+        file:
+          type: string
+          format: binary
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        alt_text:
+          type: string
+          maxLength: 255
+    PatchedSiteUpdateInputRequest:
+      type: object
+      description: |-
+        Validate input data for updating an existing site.
+
+        Supports partial updates to site details, language, status,
+        published domain, favicon, SEO metadata, and Open Graph image.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        language:
+          type: string
+          minLength: 1
+          description: Language code, e.g. en, bn, fr.
+          maxLength: 10
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            Draft: work in progress. Published: live. Archived: retired.
+
+            * `draft` - Draft
+            * `published` - Published
+            * `archived` - Archived
+        published_domain:
+          type: string
+          nullable: true
+          description: Custom domain the site is served from, e.g. example.com.
+          maxLength: 255
+        favicon:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        meta_description:
+          type: string
+          description: Default search result description. Up to 160 characters.
+          maxLength: 160
+        og_image:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        no_index:
+          type: boolean
+          description: Ask search engines not to list this site.
+    PatchedSiteVideoUpdateInputRequest:
+      type: object
+      description: |-
+        Validate input data for updating a site video.
+
+        Supports replacing the video file and updating its title
+        or poster image.
+      properties:
+        file:
+          type: string
+          format: binary
+          pattern: (?:mp4|webm|mov|m4v|ogv)$
+        title:
+          type: string
+          maxLength: 255
+        poster:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+    PatchedThemeCreateInputRequest:
+      type: object
+      description: |-
+        Validate and deserialize input data for creating a theme.
+
+        Handles theme details, language, activation status, thumbnail,
+        HTML content files, CSS, JavaScript, and the authenticated creator.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          description: Leave blank to generate it from the name.
+          oneOf:
+          - type: string
+            maxLength: 50
+            pattern: ^[-a-zA-Z0-9_]+$
+          - type: string
+            maxLength: 0
+        description:
+          type: string
+          maxLength: 1000
+        is_active:
+          type: boolean
+          default: true
+        language:
+          type: string
+          minLength: 1
+          description: Language code, e.g. en, bn, fr.
+          maxLength: 10
+        thumbnail:
+          type: string
+          format: binary
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        header:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        footer:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        body:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        css_file:
+          type: string
+          format: binary
+          pattern: (?:css)$
+        js_file:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:js)$
+    PatchedThemeImageUpdateInputRequest:
+      type: object
+      description: |-
+        Validate input data for updating a theme image.
+
+        Supports replacing the image file and updating its alternative text.
+      properties:
+        file:
+          type: string
+          format: binary
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        alt_text:
+          type: string
+          maxLength: 255
+    PatchedThemeVideoUpdateInputRequest:
+      type: object
+      description: |-
+        Validate input data for updating a theme video.
+
+        Supports replacing the video file and updating its title
+        or poster image.
+      properties:
+        file:
+          type: string
+          format: binary
+          pattern: (?:mp4|webm|mov|m4v|ogv)$
+        title:
+          type: string
+          maxLength: 255
+        poster:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+    PreviewSiteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    PublishSiteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    RefreshData:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    RefreshRequestRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    RefreshResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RefreshData'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    RegisterData:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - id
+      - refresh
+      - username
+    RegisterRequest:
+      type: object
+      description: Validate and create new user accounts.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    RegisterResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/RegisterData'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteCreateInputRequest:
+      type: object
+      description: |-
+        Validate and deserialize input data for creating a site.
+
+        Handles site details, language, active theme selection, domain,
+        favicon, Open Graph image, and the authenticated creator.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        language:
+          type: string
+          minLength: 1
+          description: Language code, e.g. en, bn, fr.
+          maxLength: 10
+        theme:
+          type: string
+          format: uuid
+        published_domain:
+          type: string
+          nullable: true
+          description: Custom domain the site is served from, e.g. example.com.
+          maxLength: 255
+        favicon:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        meta_description:
+          type: string
+          description: Default search result description. Up to 160 characters.
+          maxLength: 160
+        og_image:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        no_index:
+          type: boolean
+          description: Ask search engines not to list this site.
+      required:
+      - name
+      - theme
+    SiteCreateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    SiteDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteImageCreateInputRequest:
+      type: object
+      description: |-
+        Validate input data for uploading multiple images to a site.
+
+        Accepts a non-empty list of up to ten validated image files,
+        optional alternative text, and an optional associated page.
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+            pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+          maxItems: 10
+        alt_text:
+          type: string
+          maxLength: 255
+        page:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - files
+    SiteImageDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    SiteImageDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteImageListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteImageOutput:
+      type: object
+      description: |-
+        Serialize site image data for API responses.
+
+        Extends the base image output with the associated page field.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        width:
+          type: integer
+          readOnly: true
+          nullable: true
+        height:
+          type: integer
+          readOnly: true
+          nullable: true
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        alt_text:
+          type: string
+          readOnly: true
+          description: Short description for screen readers and for when the image
+            fails to load.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        page:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Attach the image to a specific page of the site.
+      required:
+      - alt_text
+      - created_at
+      - file
+      - height
+      - id
+      - number
+      - page
+      - size
+      - width
+    SiteImageUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteImageUploadResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteListResponsePage'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteListResponsePage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteOutput'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    SiteOutput:
+      type: object
+      description: |-
+        Serialize site data for API responses.
+
+        Returns site details, publication status, SEO metadata, assets,
+        page content, theme, creator, and timestamps.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: Leave blank to generate it from the name.
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+          nullable: true
+        language:
+          type: string
+          readOnly: true
+          description: Language code, e.g. en, bn, fr.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+          description: |-
+            Draft: work in progress. Published: live. Archived: retired.
+
+            * `draft` - Draft
+            * `published` - Published
+            * `archived` - Archived
+        published_domain:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Custom domain the site is served from, e.g. example.com.
+        favicon:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        storage_key:
+          type: string
+          readOnly: true
+          description: Folder name in file storage. Set once, never changes.
+        meta_description:
+          type: string
+          readOnly: true
+          description: Default search result description. Up to 160 characters.
+        og_image:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: 'Default image for social media shares. Recommended size: 1200x630
+            px.'
+        no_index:
+          type: boolean
+          readOnly: true
+          description: Ask search engines not to list this site.
+        header:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        footer:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        body:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: HTML file for the main page layout.
+        css_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        js_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        theme:
+          type: string
+          format: uuid
+          readOnly: true
+          description: A theme cannot be deleted while sites use it.
+        created_by:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - created_by
+      - css_file
+      - description
+      - favicon
+      - footer
+      - header
+      - id
+      - js_file
+      - language
+      - meta_description
+      - name
+      - no_index
+      - number
+      - og_image
+      - published_domain
+      - slug
+      - status
+      - storage_key
+      - theme
+      - updated_at
+    SiteUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteVideoCreateInputRequest:
+      type: object
+      description: |-
+        Validate input data for uploading multiple videos to a site.
+
+        Accepts a non-empty list of up to five validated video files
+        and an optional associated page.
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+            pattern: (?:mp4|webm|mov|m4v|ogv)$
+          maxItems: 5
+        page:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - files
+    SiteVideoDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    SiteVideoDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteVideoListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteVideoOutput:
+      type: object
+      description: |-
+        Serialize site video data for API responses.
+
+        Extends the base video output with the associated page field.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        duration:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Length of the video in seconds.
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        poster:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Preview image shown before the video plays.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        page:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Attach the video to a specific page of the site.
+      required:
+      - created_at
+      - duration
+      - file
+      - id
+      - number
+      - page
+      - poster
+      - size
+      - title
+    SiteVideoUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SiteVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    SiteVideoUploadResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    StatusEnum:
+      enum:
+      - draft
+      - published
+      - archived
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `published` - Published
+        * `archived` - Archived
+    ThemeCreateInputRequest:
+      type: object
+      description: |-
+        Validate and deserialize input data for creating a theme.
+
+        Handles theme details, language, activation status, thumbnail,
+        HTML content files, CSS, JavaScript, and the authenticated creator.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        slug:
+          description: Leave blank to generate it from the name.
+          oneOf:
+          - type: string
+            maxLength: 50
+            pattern: ^[-a-zA-Z0-9_]+$
+          - type: string
+            maxLength: 0
+        description:
+          type: string
+          maxLength: 1000
+        is_active:
+          type: boolean
+          default: true
+        language:
+          type: string
+          minLength: 1
+          description: Language code, e.g. en, bn, fr.
+          maxLength: 10
+        thumbnail:
+          type: string
+          format: binary
+          pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+        header:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        footer:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        body:
+          type: string
+          format: binary
+          pattern: (?:html|htm)$
+        css_file:
+          type: string
+          format: binary
+          pattern: (?:css)$
+        js_file:
+          type: string
+          format: binary
+          nullable: true
+          pattern: (?:js)$
+      required:
+      - body
+      - css_file
+      - footer
+      - header
+      - name
+      - thumbnail
+    ThemeCreateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeOuput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    ThemeDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeOuput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeImageCreateInputRequest:
+      type: object
+      description: |-
+        Validate input data for uploading multiple images to a theme.
+
+        Accepts a non-empty list of up to ten validated image files
+        and optional alternative text.
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+            pattern: (?:jpg|jpeg|png|gif|webp|svg|ico)$
+          maxItems: 10
+        alt_text:
+          type: string
+          maxLength: 255
+      required:
+      - files
+    ThemeImageDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    ThemeImageDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeImageListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeImageOutput:
+      type: object
+      description: |-
+        Serialize theme image data for API responses.
+
+        Extends the base image output serializer without adding fields.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        width:
+          type: integer
+          readOnly: true
+          nullable: true
+        height:
+          type: integer
+          readOnly: true
+          nullable: true
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        alt_text:
+          type: string
+          readOnly: true
+          description: Short description for screen readers and for when the image
+            fails to load.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - alt_text
+      - created_at
+      - file
+      - height
+      - id
+      - number
+      - size
+      - width
+    ThemeImageUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeImageUploadResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeListResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeListResponsePage'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeListResponsePage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThemeOuput'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    ThemeOuput:
+      type: object
+      description: |-
+        Serialize theme data for API responses.
+
+        Returns theme details, activation status, language, thumbnail,
+        HTML/CSS/JavaScript files, creator, and timestamps.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: Leave blank to generate it from the name.
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Only active themes should be offered when creating a new site.
+        language:
+          type: string
+          readOnly: true
+          description: Language code, e.g. en, bn, fr.
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        storage_key:
+          type: string
+          readOnly: true
+          description: Folder name in file storage. Set once, never changes.
+        header:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        footer:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        body:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: HTML file for the main page layout.
+        css_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        js_file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - created_by
+      - css_file
+      - description
+      - footer
+      - header
+      - id
+      - is_active
+      - js_file
+      - language
+      - name
+      - number
+      - slug
+      - storage_key
+      - thumbnail
+      - updated_at
+    ThemeUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeOuput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeVideoCreateInputRequest:
+      type: object
+      description: |-
+        Validate input data for uploading multiple videos to a theme.
+
+        Accepts a non-empty list of up to five validated video files.
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+            pattern: (?:mp4|webm|mov|m4v|ogv)$
+          maxItems: 5
+      required:
+      - files
+    ThemeVideoDeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    ThemeVideoDetailResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeVideoListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeVideoOutput:
+      type: object
+      description: |-
+        Serialize theme video data for API responses.
+
+        Extends the base video output serializer without adding fields.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        duration:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Length of the video in seconds.
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        poster:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Preview image shown before the video plays.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - duration
+      - file
+      - id
+      - number
+      - poster
+      - size
+      - title
+    ThemeVideoUpdateResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ThemeVideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    ThemeVideoUploadResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoOutput'
+        message:
+          type: string
+      required:
+      - data
+      - message
+    VideoOutput:
+      type: object
+      description: |-
+        Serialize video data for API responses.
+
+        Returns video metadata including file URL, title, duration,
+        file size, poster image, and creation timestamp.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Unique within this table. Assigned by the database, never reused,
+            may have gaps.
+        file:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        duration:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Length of the video in seconds.
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        poster:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+          description: Preview image shown before the video plays.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - duration
+      - file
+      - id
+      - number
+      - poster
+      - size
+      - title
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

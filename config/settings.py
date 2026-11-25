@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'sites',
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
@@ -115,7 +116,7 @@ RATE_LIMIT = {
     "ENABLED": env.bool("RATE_LIMIT_ENABLED", default=True),
     "REDIS_URL": env("RATE_LIMIT_REDIS_URL", default="redis://127.0.0.1:6379/2"),
     "SOCKET_TIMEOUT": env.float("RATE_LIMIT_SOCKET_TIMEOUT", default=0.08),
-    "EXEMPT_PATHS": ["/health/", "/admin/"],
+    "EXEMPT_PATHS": ["/health/", "/admin/", "/api/docs/", "/api/schema/", "/api/redoc/"],
     "MAX_UPLOAD_BYTES": 100 * 1024 * 1024,
     "POLICIES": {
         "read":   {"capacity": 120, "rate": 2},     
@@ -154,6 +155,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "sites.utils.docs.PrestoAutoSchema",
 }
 
 SIMPLE_JWT = {
@@ -164,6 +166,13 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Presto API",
+    "DESCRIPTION": "API for authentication, themes, sites, pages, media, preview and publishing.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,   
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},

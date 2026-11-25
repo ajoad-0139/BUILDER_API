@@ -11,8 +11,23 @@ from sites.cache.cache_core import THEMES, cached, signature, theme_images, them
 from sites.serializers.theme import (ThemeCreateInputSerializer, ThemeOuputSerializer , ThemeVideoCreateInputSerializer,
     ThemeListQuerySerializer, ThemeImageCreateInputSerializer, ThemeImageUpdateInputSerializer, ThemeImageOutputSerializer,
     ThemeVideoOutputSerializer, ThemeVideoUpdateInputSerializer)
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from sites.utils.docs import envelope, paginated
 
 
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Themes"], summary="List themes",
+        parameters=[ThemeListQuerySerializer],
+        responses={200: paginated("ThemeListResponse", ThemeOuputSerializer)},
+    ),
+    post=extend_schema(
+        tags=["Themes"], summary="Create a theme",
+        request=ThemeCreateInputSerializer,
+        responses={201: envelope("ThemeCreateResponse", ThemeOuputSerializer())},
+    ),
+)
 class ThemeList(APIView):
     """Handle listing and creating themes."""
 
@@ -71,6 +86,22 @@ class ThemeList(APIView):
             status.HTTP_201_CREATED,
         )
 
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Themes"], summary="Retrieve a theme",
+        responses={200: envelope("ThemeDetailResponse", ThemeOuputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Themes"], summary="Update a theme",
+        request=ThemeCreateInputSerializer,
+        responses={200: envelope("ThemeUpdateResponse", ThemeOuputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Themes"], summary="Delete a theme",
+        responses={200: envelope("ThemeDeleteResponse")},
+    ),
+)
 class ThemeDetail(APIView):
     """Handle retrieving, updating, and deleting a theme."""
 
@@ -136,7 +167,19 @@ class ThemeDetail(APIView):
         self.services.delete(theme_id=theme_id, user=request.user)
         return success_response(message="Theme deleted")
  
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Theme Media"], summary="List theme images",
+        responses={200: envelope("ThemeImageListResponse", ImageOutputSerializer(many=True))},
+    ),
+    post=extend_schema(
+        tags=["Theme Media"], summary="Upload theme images",
+        request={"multipart/form-data": ThemeImageCreateInputSerializer},
+        responses={201: envelope("ThemeImageUploadResponse", ImageOutputSerializer(many=True))},
+    ),
+)
 class ThemeImageList(APIView):
     """Handle listing and uploading images for a theme."""
 
@@ -188,7 +231,23 @@ class ThemeImageList(APIView):
             status.HTTP_201_CREATED,
         )
  
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Theme Media"], summary="Retrieve a theme image",
+        responses={200: envelope("ThemeImageDetailResponse", ThemeImageOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Theme Media"], summary="Update a theme image",
+        request=ThemeImageUpdateInputSerializer,
+        responses={200: envelope("ThemeImageUpdateResponse", ThemeImageOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Theme Media"], summary="Delete a theme image",
+        responses={200: envelope("ThemeImageDeleteResponse")},
+    ),
+)
 class ThemeImageDetail(APIView):
     """Handle retrieving, updating, and deleting a theme image."""
 
@@ -257,7 +316,20 @@ class ThemeImageDetail(APIView):
 
         return success_response(message="Image deleted")
  
- 
+
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Theme Media"], summary="List theme videos",
+        responses={200: envelope("ThemeVideoListResponse", VideoOutputSerializer(many=True))},
+    ),
+    post=extend_schema(
+        tags=["Theme Media"], summary="Upload theme videos",
+        request={"multipart/form-data": ThemeVideoCreateInputSerializer},
+        responses={201: envelope("ThemeVideoUploadResponse", VideoOutputSerializer(many=True))},
+    ),
+)
 class ThemeVideoList(APIView):
     """Handle listing and uploading videos for a theme."""
 
@@ -307,7 +379,24 @@ class ThemeVideoList(APIView):
             status.HTTP_201_CREATED,
         )
  
- 
+
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Theme Media"], summary="Retrieve a theme video",
+        responses={200: envelope("ThemeVideoDetailResponse", ThemeVideoOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Theme Media"], summary="Update a theme video",
+        request=ThemeVideoUpdateInputSerializer,
+        responses={200: envelope("ThemeVideoUpdateResponse", ThemeVideoOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Theme Media"], summary="Delete a theme video",
+        responses={200: envelope("ThemeVideoDeleteResponse")},
+    ),
+)
 class ThemeVideoDetail(APIView):
     """Handle retrieving, updating, and deleting a theme video."""
 

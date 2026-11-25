@@ -9,7 +9,23 @@ from sites.cache.cache_core import signature, site_pages, cached
 from sites.serializers.page import (
     PageCreateInputSerializer, PageListQuerySerializer, PageOutputSerializer,
 )
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from sites.utils.docs import envelope
 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Pages"], summary="List pages of a site",
+        parameters=[PageListQuerySerializer],
+        responses={200: envelope("PageListResponse", PageOutputSerializer(many=True))},
+    ),
+    post=extend_schema(
+        tags=["Pages"], summary="Create a page",
+        request=PageCreateInputSerializer,
+        responses={201: envelope("PageCreateResponse", PageOutputSerializer())},
+    ),
+)
 class PageList(APIView):
     """Handle listing and creating pages for a site."""
 
@@ -64,6 +80,22 @@ class PageList(APIView):
             status.HTTP_201_CREATED,
         )
  
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Pages"], summary="Retrieve a page",
+        responses={200: envelope("PageDetailResponse", PageOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Pages"], summary="Update a page",
+        request=PageCreateInputSerializer,
+        responses={200: envelope("PageUpdateResponse", PageOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Pages"], summary="Delete a page",
+        responses={200: envelope("PageDeleteResponse")},
+    ),
+) 
 class PageDetail(APIView):
     """Handle retrieving, updating, and deleting a site page."""
 

@@ -13,8 +13,24 @@ from sites.serializers.site import (SiteCreateInputSerializer, SiteListQuerySeri
     SiteVideoCreateInputSerializer, SiteVideoListQuerySerializer, SiteVideoOutputSerializer, SiteImageUpdateInputSerializer,
     SiteVideoUpdateInputSerializer
     )
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from sites.utils.docs import envelope, paginated
 
 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Sites"], summary="List my sites",
+        parameters=[SiteListQuerySerializer],
+        responses={200: paginated("SiteListResponse", SiteOutputSerializer)},
+    ),
+    post=extend_schema(
+        tags=["Sites"], summary="Create a site",
+        request=SiteCreateInputSerializer,
+        responses={201: envelope("SiteCreateResponse", SiteOutputSerializer())},
+    ),
+)
 class SiteList(APIView):
     """Handle listing and creating sites for the authenticated user."""
 
@@ -75,7 +91,23 @@ class SiteList(APIView):
         )
  
 
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Sites"], summary="Retrieve a site",
+        responses={200: envelope("SiteDetailResponse", SiteOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Sites"], summary="Update a site",
+        request=SiteUpdateInputSerializer,
+        responses={200: envelope("SiteUpdateResponse", SiteOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Sites"], summary="Delete a site",
+        responses={200: envelope("SiteDeleteResponse")},
+    ),
+)
 class SiteDetail(APIView):
     """Handle retrieving, updating, and deleting a site."""
 
@@ -144,6 +176,19 @@ class SiteDetail(APIView):
         return success_response(message="Site deleted")
 
 
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Site Media"], summary="List site images",
+        parameters=[SiteImageListQuerySerializer],
+        responses={200: envelope("SiteImageListResponse", SiteImageOutputSerializer(many=True))},
+    ),
+    post=extend_schema(
+        tags=["Site Media"], summary="Upload site images",
+        request={"multipart/form-data": SiteImageCreateInputSerializer},
+        responses={201: envelope("SiteImageUploadResponse", SiteImageOutputSerializer(many=True))},
+    ),
+)
 class SiteImageList(APIView):
     """Handle listing and uploading images for a site."""
 
@@ -199,7 +244,23 @@ class SiteImageList(APIView):
             "Images uploaded",
             status.HTTP_201_CREATED,
         )
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Site Media"], summary="Retrieve a site image",
+        responses={200: envelope("SiteImageDetailResponse", SiteImageOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Site Media"], summary="Update a site image",
+        request=SiteImageUpdateInputSerializer,
+        responses={200: envelope("SiteImageUpdateResponse", SiteImageOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Site Media"], summary="Delete a site image",
+        responses={200: envelope("SiteImageDeleteResponse")},
+    ),
+)
 class SiteImageDetail(APIView):
     """Handle retrieving, updating, and deleting a site image."""
 
@@ -267,7 +328,20 @@ class SiteImageDetail(APIView):
         self.services.delete(site_id=site_id, image_id=image_id, user=request.user)
         return success_response(message="Image deleted")
  
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Site Media"], summary="List site videos",
+        parameters=[SiteVideoListQuerySerializer],
+        responses={200: envelope("SiteVideoListResponse", SiteVideoOutputSerializer(many=True))},
+    ),
+    post=extend_schema(
+        tags=["Site Media"], summary="Upload site videos",
+        request={"multipart/form-data": SiteVideoCreateInputSerializer},
+        responses={201: envelope("SiteVideoUploadResponse", SiteVideoOutputSerializer(many=True))},
+    ),
+)
 class SiteVideoList(APIView):
     """Handle listing and uploading videos for a site."""
 
@@ -324,7 +398,23 @@ class SiteVideoList(APIView):
             status.HTTP_201_CREATED,
         )
  
- 
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Site Media"], summary="Retrieve a site video",
+        responses={200: envelope("SiteVideoDetailResponse", SiteVideoOutputSerializer())},
+    ),
+    patch=extend_schema(
+        tags=["Site Media"], summary="Update a site video",
+        request=SiteVideoUpdateInputSerializer,
+        responses={200: envelope("SiteVideoUpdateResponse", SiteVideoOutputSerializer())},
+    ),
+    delete=extend_schema(
+        tags=["Site Media"], summary="Delete a site video",
+        responses={200: envelope("SiteVideoDeleteResponse")},
+    ),
+)
 class SiteVideoDetail(APIView):
     """Handle retrieving, updating, and deleting a site video."""
 

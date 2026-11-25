@@ -1,14 +1,15 @@
 """Provide API views for user registration, authentication, token management, and profile retrieval."""
 
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from sites.utils.docs import envelope, _token_fields, _user_fields
 from sites.serializers.auth import LoginSerializer, RegisterSerializer
-
 from sites.exceptions import APIError
 from sites.utils.responses import success_response
 
@@ -28,6 +29,12 @@ def issue_tokens(user):
     return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
+@extend_schema_view(post=extend_schema(
+    tags=["Auth"], summary="Register a new user",
+    request=RegisterSerializer,
+    responses={201: envelope("RegisterResponse", inline_serializer(
+        "RegisterData", {**_user_fields(), **_token_fields()}))},
+))
 class RegisterView(APIView):
     """Handle user registration and initial token generation.
 
@@ -61,6 +68,13 @@ class RegisterView(APIView):
         )
 
 
+
+@extend_schema_view(post=extend_schema(
+    tags=["Auth"], summary="Log in and obtain tokens",
+    request=LoginSerializer,
+    responses={200: envelope("LoginResponse", inline_serializer(
+        "LoginData", {**_user_fields(), **_token_fields()}))},
+))
 class LoginView(APIView):
     """Handle user authentication and token generation.
 
@@ -99,6 +113,13 @@ class LoginView(APIView):
         )
 
 
+
+@extend_schema_view(post=extend_schema(
+    tags=["Auth"], summary="Refresh the access token",
+    request=inline_serializer("RefreshRequest", {"refresh": serializers.CharField()}),
+    responses={200: envelope("RefreshResponse", inline_serializer(
+        "RefreshData", _token_fields()))},
+))
 class RefreshView(APIView):
     """Handle refresh token validation and access token renewal.
 
@@ -133,6 +154,12 @@ class RefreshView(APIView):
         return success_response(serializer.validated_data, "Token refreshed")
 
 
+
+@extend_schema_view(post=extend_schema(
+    tags=["Auth"], summary="Log out (blacklist refresh token)",
+    request=inline_serializer("LogoutRequest", {"refresh": serializers.CharField(required=False)}),
+    responses={200: envelope("LogoutResponse")},
+))
 class LogoutView(APIView):
     """Handle user logout by revoking the supplied refresh token.
 
@@ -140,7 +167,7 @@ class LogoutView(APIView):
     when the access token has expired.
     """
 
-    permission_classes = [AllowAny]  # works even if the access token already expired
+    permission_classes = [AllowAny]  
     authentication_classes = []
 
     def post(self, request):
@@ -161,6 +188,11 @@ class LogoutView(APIView):
         return success_response(message="Logged out")
 
 
+
+@extend_schema_view(get=extend_schema(
+    tags=["Auth"], summary="Get the current user",
+    responses={200: envelope("MeResponse", inline_serializer("MeData", _user_fields()))},
+))
 class MeView(APIView):
     """Provide the authenticated user's profile information."""
 
