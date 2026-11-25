@@ -120,7 +120,7 @@ def test_upload_single_image(auth_client, theme):
     assert image.theme_id == theme.id
     assert image.site_id is None
     assert image.page_id is None
-    assert image.file.name.startswith(f"themes/{theme.id}/images/")
+    assert image.file.name.startswith(f"themes/{theme.storage_key}/images/")
     assert os.path.exists(image.file.path)
 
 
@@ -471,7 +471,7 @@ def test_upload_single_video(auth_client, theme):
     assert video.theme_id == theme.id
     assert video.site_id is None
     assert video.page_id is None
-    assert video.file.name.startswith(f"themes/{theme.id}/videos/")
+    assert video.file.name.startswith(f"themes/{theme.storage_key}/videos/")
     assert os.path.exists(video.file.path)
 
 

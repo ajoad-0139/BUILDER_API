@@ -170,7 +170,7 @@ def test_create_page_with_all_files(auth_client, site):
         assert data[field]
 
     page = Page.objects.get()
-    prefix = f"sites/{site.id}/pages/{page.id}"
+    prefix = f"sites/{site.storage_key}/pages/{page.slug}"
     assert page.html_file.name.startswith(f"{prefix}/html/")
     assert page.css_file.name.startswith(f"{prefix}/css/")
     assert page.js_file.name.startswith(f"{prefix}/js/")

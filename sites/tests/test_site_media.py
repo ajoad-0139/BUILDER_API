@@ -139,7 +139,7 @@ def test_upload_single_image(auth_client, site):
     image = Image.objects.get()
     assert image.site_id == site.id
     assert image.theme_id is None
-    assert image.file.name.startswith(f"sites/{site.id}/images/")
+    assert image.file.name.startswith(f"sites/{site.storage_key}/images/")
     assert os.path.exists(image.file.path)
 
 
@@ -453,7 +453,7 @@ def test_upload_single_video(auth_client, site):
     video = Video.objects.get()
     assert video.site_id == site.id
     assert video.theme_id is None
-    assert video.file.name.startswith(f"sites/{site.id}/videos/")
+    assert video.file.name.startswith(f"sites/{site.storage_key}/videos/")
     assert os.path.exists(video.file.path)
 
 
